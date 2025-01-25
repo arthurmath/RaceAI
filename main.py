@@ -5,7 +5,6 @@ import time
 import math
 import numpy as np
 
-
     
 class Car:
     def __init__(self, ses): 
@@ -46,9 +45,9 @@ class Car:
 
         if not moved:
             if self.speed > 0:
-                self.speed = max(self.speed - self.acceleration / 2, 0)
+                self.speed = max(self.speed - self.acceleration, 0)
             else:
-                self.speed = min(self.speed + self.acceleration / 2, 0)
+                self.speed = min(self.speed + self.acceleration, 0)
 
 
         if self.collision != None:
@@ -68,13 +67,50 @@ class Car:
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
-        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
+        pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
+        
+    
+    
+    def progression(self):
+        """
+        Calcule l'avancée de la voiture sur le circuit en pourcentage.
+        
+        :param checkpoints: Liste des points clés (x, y) définissant le circuit.
+        :return: Pourcentage de progression (0 à 100).
+        """
+        
+        checkpoints = [(240, 275), (302, 75), (425, 450), (500, 95), (970, 95), (970, 270)]
+        
+        for checkpoint in checkpoints:
+            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
+        
+        total_distance = 0
+        for i in range(len(checkpoints) - 1):
+            total_distance += math.dist(checkpoints[i], checkpoints[i + 1])
+        
+        # Calculer la distance parcourue par la voiture
+        distance_parcourue = 0
+        for i in range(len(checkpoints) - 1):
+            if math.dist((self.x, self.y), checkpoints[i]) < math.dist(checkpoints[i], checkpoints[i + 1]):
+                # Si la voiture est entre deux checkpoints
+                distance_parcourue += math.dist(checkpoints[i], (self.x, self.y))
+                break
+            else:
+                distance_parcourue += math.dist(checkpoints[i], checkpoints[i + 1])
+        
+        # Calculer la progression en pourcentage
+        progression = (distance_parcourue / total_distance) * 100
+        return min(max(progression, 0), 100)
+
+        
         
     def reset(self):
         self.x, self.y = self.initial_pos
         self.speed = 0
         self.angle = 0
+        
+        
         
     
     
@@ -119,7 +155,7 @@ class Score:
         self.timer_running = True
         self.background = background
         self.car = car
-        self.high_time = - np.inf
+        self.high_time = np.inf
         self.timer_running = 0
         self.time_saved = False
             
@@ -131,15 +167,16 @@ class Score:
             if self.temps_ecoule < self.high_time:
                 self.high_time = self.temps_ecoule 
                 
-                with open("times.txt", "a") as file:
-                    file.write(f"{self.high_time:.3f}\n")
+                if self.high_time > 20: # pour ne pas sauvegarder les marches arrières sur le finish
+                    with open("times.txt", "a") as file:
+                        file.write(f"{self.high_time:.3f}\n")
                 
             self.start_ticks = pg.time.get_ticks() # reset timer
             car.reset()
             
 
 
-    def draw(self): #pour affichage du timer
+    def draw(self, car): #pour affichage du timer
         font = pg.font.Font(pg.font.match_font('arial'), 20) #police d'écriture
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
         text_surface = font.render(text, True, WHITE)   #création de la surface de texte
@@ -148,12 +185,21 @@ class Score:
         ses.screen.blit(text_surface, text_rect)
         
         #affichage high score
-        # self.high_time = 0 if self.high_time == -np.inf else self.high_time
-        text1 = f"Meilleur temps : {self.high_time}s"
+        if self.high_time == np.inf:
+            text1 = f"Meilleur temps : Aucun"
+        else:
+            text1 = f"Meilleur temps : {self.high_time}"
         text_surface1 = font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
         ses.screen.blit(text_surface1, text_rect1)
+        
+        text2 = f"Progression : {car.progression():.3f}%"
+        font = pg.font.Font(pg.font.match_font('arial'), 20) #police d'écriture
+        text_surface2 = font.render(text2, True, WHITE)   #création de la surface de texte
+        text_rect2 = text_surface2.get_rect() #récupération du rectangle de la surface de texte
+        text_rect2.topleft = (10, 760)
+        ses.screen.blit(text_surface2, text_rect2)
         
 
 
@@ -165,7 +211,7 @@ class Session:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption('Race AI')
 
-        #self.music()
+        self.music()
         self.load_images()
         self.generate_objects()
         
@@ -212,7 +258,7 @@ class Session:
     def draw(self):
         self.background.draw()
         self.car.draw()
-        self.score.draw()
+        self.score.draw(self.car)
         pg.display.flip()
 
 
@@ -267,5 +313,34 @@ if __name__ == '__main__':
     
     
 
-# a faire : niveau d'avancee sur le circuit, collision avec ligne arrivée = game over
+# a faire : niveau d'avancee sur le circuit
 
+
+
+
+
+
+
+# lines = [((300, 40), (300, 650), (0, 0, 255)),
+#                  ((200, 130), (400, 130), (0, 0, 255)),
+#                  ((320, 390), (520, 390), (0, 0, 255)),
+#                  ((420, 150), (420, 500), (0, 0, 255)),
+#                  ((530, 30), (530, 400), (0, 0, 255)),
+#                  ((440, 125), (1030, 125), (0, 0, 255)),
+#                  ((940, 40), (940, 320), (0, 0, 255)),
+#                  ((620, 240), (1050, 240), (0, 0, 255)),
+#                  ((680, 240), (680, 440), (0, 0, 255)),
+#                  ((570, 340), (1000, 340), (0, 0, 255)),
+#                  ((600, 440), (1030, 440), (0, 0, 255)),
+#                  ((940, 360), (940, 840), (0, 0, 255)),
+#                  ((800, 750), (1030, 750), (0, 0, 255)),
+#                  ((890, 600), (890, 840), (0, 0, 255)),
+#                  ((580, 580), (870, 580), (0, 0, 255)),
+#                  ((780, 490), (780, 770), (0, 0, 255)),
+#                  ((680, 490), (680, 770), (0, 0, 255)),
+#                  ((570, 570), (570, 840), (0, 0, 255)),
+#                  ((170, 370), (620, 820), (0, 0, 255)),
+#                  ]
+
+#         for start, end, color in lines:
+#             pg.draw.line(ses.screen, color, start, end, 2)
