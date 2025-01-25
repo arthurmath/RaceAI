@@ -6,9 +6,6 @@ import math
 import numpy as np
 
 
-print("hello")
-
-
     
 class Car:
     def __init__(self, ses): 
@@ -137,6 +134,7 @@ class Score:
                 with open("times.txt", "a") as file:
                     file.write(f"{self.high_time:.3f}\n")
                 
+            self.start_ticks = pg.time.get_ticks() # reset timer
             car.reset()
             
 
