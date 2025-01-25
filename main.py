@@ -6,6 +6,9 @@ import math
 import numpy as np
 
 
+print("hello")
+
+
     
 class Car:
     def __init__(self, ses): 
