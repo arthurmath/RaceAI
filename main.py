@@ -5,7 +5,6 @@ import time
 import math
 import numpy as np
 
-print("hello32")
     
 class Car:
     def __init__(self, ses): 
@@ -119,7 +118,7 @@ class Score:
         self.timer_running = True
         self.background = background
         self.car = car
-        self.high_time = - np.inf
+        self.high_time = np.inf
         self.timer_running = 0
         self.time_saved = False
             
@@ -128,7 +127,9 @@ class Score:
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         
         if self.background.collision_finish(self.car):
+            print(self.temps_ecoule, self.high_time)
             if self.temps_ecoule < self.high_time:
+                print("ici")
                 self.high_time = self.temps_ecoule 
                 
                 with open("times.txt", "a") as file:
@@ -148,8 +149,10 @@ class Score:
         ses.screen.blit(text_surface, text_rect)
         
         #affichage high score
-        # self.high_time = 0 if self.high_time == -np.inf else self.high_time
-        text1 = f"Meilleur temps : {self.high_time}s"
+        if self.high_time == np.inf:
+            text1 = f"Meilleur temps : Aucun"
+        else:
+            text1 = f"Meilleur temps : {self.high_time}"
         text_surface1 = font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
