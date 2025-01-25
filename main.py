@@ -68,7 +68,7 @@ class Car:
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
-        pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
+        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
         
     def reset(self):
@@ -123,30 +123,12 @@ class Score:
         self.timer_running = 0
         self.time_saved = False
             
-    
-    # def update(self):
-        self.times = [0]
-        self.time_save = []
-        self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000  # temps écoulé en secondes
-        if self.background.collision_finish(self.car) and not self.time_saved:
-            self.final_time = (pg.time.get_ticks() - self.start_ticks) / 1000
-            self.times.append(self.final_time)
-            self.time_save.append(self.final_time)
-
-            # with open("times.txt", "a") as file:
-            #     file.write(f"{self.final_time:.3f}\n")
-            # self.time_saved = True
-
-        if self.times == [0]:
-            self.high_time = 0
-        else:
-            self.high_time = max(max(self.times), self.temps_ecoule)
             
     def update(self, car):
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         
         if self.background.collision_finish(self.car):
-            if self.temps_ecoule > self.high_time:
+            if self.temps_ecoule < self.high_time:
                 self.high_time = self.temps_ecoule 
                 
                 with open("times.txt", "a") as file:
@@ -165,6 +147,7 @@ class Score:
         ses.screen.blit(text_surface, text_rect)
         
         #affichage high score
+        # self.high_time = 0 if self.high_time == -np.inf else self.high_time
         text1 = f"Meilleur temps : {self.high_time}s"
         text_surface1 = font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
