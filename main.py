@@ -5,6 +5,7 @@ import time
 import math
 import numpy as np
 
+
     
 class Car:
     def __init__(self, ses): 
@@ -16,15 +17,20 @@ class Car:
         self.acceleration = 0.2
         self.rotation_speed = 9
         self.max_speed = 10
-        self.collision = None
         
         self.car_rect = self.car_img.get_rect()
         self.car_rect.left = 200
         self.car_rect.top = HEIGHT / 2 - 50
         self.car_rect.width = 45
-        self.collision_finish = None
         
-        self.compteur = 0
+        self.collision = None
+        self.compteur = 0 # pour les collisions
+        
+        self.checkpoints = [(240, 275), (302, 75), (425, 450), (500, 95), (970, 95), (970, 270)]
+        self.total_distance = 0
+        for i in range(len(self.checkpoints) - 1):
+            self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
+        self.dist_deja_parcourue = 0
         
         
     def update(self):
@@ -51,7 +57,7 @@ class Car:
 
 
         if self.collision != None:
-            if self.compteur < 0:
+            if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois /sec), sinon bug
                 self.speed = - self.speed / 2
                 self.compteur = 10
         self.compteur -= 1
@@ -67,40 +73,44 @@ class Car:
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
-        pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
+        for checkpoint in self.checkpoints:
+            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
+        
+        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
         
     
+    # def progression(self):
+    #     """ Calcule l'avancée de la voiture sur le circuit """
+        
+    #     distance_parcourue = 0
+    #     for i in range(len(self.checkpoints) - 1):
+    #         if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
+    #             # Si la voiture est entre deux checkpoints
+    #             distance_parcourue += math.dist(self.checkpoints[i], (self.x, self.y))
+    #             break
+    #         else:
+    #             # Sinon on ajoute la distance entre les 2 derniers checkpoints
+    #             distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
+        
+    #     progression = (distance_parcourue / self.total_distance) * 100
+    #     return min(max(progression, 0), 100)
+    
     
     def progression(self):
-        """
-        Calcule l'avancée de la voiture sur le circuit en pourcentage.
+        """ Calcule l'avancée de la voiture sur le circuit """
         
-        :param checkpoints: Liste des points clés (x, y) définissant le circuit.
-        :return: Pourcentage de progression (0 à 100).
-        """
-        
-        checkpoints = [(240, 275), (302, 75), (425, 450), (500, 95), (970, 95), (970, 270)]
-        
-        for checkpoint in checkpoints:
-            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
-        
-        total_distance = 0
-        for i in range(len(checkpoints) - 1):
-            total_distance += math.dist(checkpoints[i], checkpoints[i + 1])
-        
-        # Calculer la distance parcourue par la voiture
         distance_parcourue = 0
-        for i in range(len(checkpoints) - 1):
-            if math.dist((self.x, self.y), checkpoints[i]) < math.dist(checkpoints[i], checkpoints[i + 1]):
+        for i in range(len(self.checkpoints) - 1):
+            if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
                 # Si la voiture est entre deux checkpoints
-                distance_parcourue += math.dist(checkpoints[i], (self.x, self.y))
+                distance_parcourue += math.dist(self.checkpoints[i], (self.x, self.y))
                 break
             else:
-                distance_parcourue += math.dist(checkpoints[i], checkpoints[i + 1])
+                # Sinon on ajoute la distance entre les 2 derniers checkpoints
+                distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
         
-        # Calculer la progression en pourcentage
-        progression = (distance_parcourue / total_distance) * 100
+        progression = (distance_parcourue / self.total_distance) * 100
         return min(max(progression, 0), 100)
 
         
@@ -125,7 +135,7 @@ class Background:
         self.border_pos = (170, -10)
         self.border_mask = pg.mask.from_surface(self.border)
         self.border_mask_img = show_mask(self.border)
-        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) #on crée un masque pour la ligne d'arrivée
+        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) #on crée un rect pour la ligne d'arrivée
         
     def update(self, car):
         self.car_mask = pg.mask.from_surface(car.car_img)
@@ -143,8 +153,9 @@ class Background:
         
         
     def collision_finish(self, car):
-        car_rect = car.car_rect #cette ligne sert a récupérer les coordonnées de la voiture
-        return car_rect.colliderect(self.finish_rect) #on change l'état de collision
+        car_rect = car.car_rect # récupérer le rectangle de la voiture
+        return car_rect.colliderect(self.finish_rect) # detecte la collision
+        
         
         
 
@@ -152,55 +163,52 @@ class Background:
 class Score:
     def __init__(self, background, car):
         self.start_ticks = pg.time.get_ticks() 
-        self.timer_running = True
         self.background = background
         self.car = car
         self.high_time = np.inf
-        self.timer_running = 0
-        self.time_saved = False
+        self.font = pg.font.Font(pg.font.match_font('arial'), 20) # police d'écriture
             
             
     def update(self, car):
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         
         if self.background.collision_finish(self.car):
-            if self.temps_ecoule < self.high_time:
-                self.high_time = self.temps_ecoule 
-                
-                if self.high_time > 20: # pour ne pas sauvegarder les marches arrières sur le finish
+            if self.temps_ecoule < self.high_time: # si le temps realisé est meilleur que l'ancien record
+                if self.temps_ecoule > 20: # pour ne pas sauvegarder les marches arrières sur le finish
+                    self.high_time = self.temps_ecoule 
                     with open("times.txt", "a") as file:
                         file.write(f"{self.high_time:.3f}\n")
                 
             self.start_ticks = pg.time.get_ticks() # reset timer
             car.reset()
-            
+    
 
-
-    def draw(self, car): #pour affichage du timer
-        font = pg.font.Font(pg.font.match_font('arial'), 20) #police d'écriture
+    def draw(self, car): 
+        # affichage du timer
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
-        text_surface = font.render(text, True, WHITE)   #création de la surface de texte
-        text_rect = text_surface.get_rect() #récupération du rectangle de la surface de texte
+        text_surface = self.font.render(text, True, WHITE)   #création de la surface du texte
+        text_rect = text_surface.get_rect() #récupération du rectangle de la surface du texte
         text_rect.topleft = (10, 800)
         ses.screen.blit(text_surface, text_rect)
         
-        #affichage high score
+        # affichage high score
         if self.high_time == np.inf:
             text1 = f"Meilleur temps : Aucun"
         else:
             text1 = f"Meilleur temps : {self.high_time}"
-        text_surface1 = font.render(text1, True, WHITE)
+        text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
         ses.screen.blit(text_surface1, text_rect1)
         
+        # affichage progression
         text2 = f"Progression : {car.progression():.3f}%"
-        font = pg.font.Font(pg.font.match_font('arial'), 20) #police d'écriture
-        text_surface2 = font.render(text2, True, WHITE)   #création de la surface de texte
-        text_rect2 = text_surface2.get_rect() #récupération du rectangle de la surface de texte
+        text_surface2 = self.font.render(text2, True, WHITE)
+        text_rect2 = text_surface2.get_rect() 
         text_rect2.topleft = (10, 760)
         ses.screen.blit(text_surface2, text_rect2)
         
+
 
 
 
@@ -211,7 +219,7 @@ class Session:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption('Race AI')
 
-        self.music()
+        # self.music()
         self.load_images()
         self.generate_objects()
         
@@ -254,7 +262,6 @@ class Session:
         self.score.update(self.car)
         self.clock.tick(FPS)
     
-        
     def draw(self):
         self.background.draw()
         self.car.draw()
@@ -274,8 +281,7 @@ class Session:
             
     
     
-    
-    
+
         
 
 
@@ -313,7 +319,6 @@ if __name__ == '__main__':
     
     
 
-# a faire : niveau d'avancee sur le circuit
 
 
 
