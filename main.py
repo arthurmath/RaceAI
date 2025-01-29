@@ -1,9 +1,8 @@
 import pygame as pg
+import numpy as np
 import random
 import sys
-import time
 import math
-import numpy as np
 
     
 class Car:
@@ -70,8 +69,40 @@ class Car:
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
         
-    # def progression(self):
         
+    
+    def progression(self):
+        """
+        Calcule l'avancée de la voiture sur le circuit en pourcentage.
+        
+        :param checkpoints: Liste des points clés (x, y) définissant le circuit.
+        :return: Pourcentage de progression (0 à 100%).
+        """
+        checkpoints = [[241, 272], [300, 70], [420, 450], [500, 90]] 
+        
+        for point in checkpoints:
+            pg.draw.circle(ses.screen, (0, 255, 0), point, 5)
+
+        # Calculer la distance totale du circuit
+        total_distance = 0
+        for i in range(len(checkpoints) - 1):
+            total_distance += math.dist(checkpoints[i], checkpoints[i + 1])
+        
+        # Calculer la distance parcourue par la voiture
+        distance_parcourue = 0
+        for i in range(len(checkpoints) - 1):
+            if math.dist((self.x, self.y), checkpoints[i]) < math.dist(checkpoints[i], checkpoints[i + 1]):
+                # Si la voiture est entre deux checkpoints
+                distance_parcourue += math.dist(checkpoints[i], (self.x, self.y))
+                break
+            else:
+                distance_parcourue += math.dist(checkpoints[i], checkpoints[i + 1])
+                print(i)
+        
+        # Calculer la progression en pourcentage
+        progression = (distance_parcourue / total_distance) * 100
+        return min(max(progression, 0), 100)
+
         
     def reset(self):
         self.x, self.y = self.initial_pos
@@ -81,7 +112,7 @@ class Car:
     
         
     
-    
+
 
 
 class Background:
@@ -100,7 +131,6 @@ class Background:
         offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # Correspond à la différence des coordonnées des 2 masques.
         car.collision = self.border_mask.overlap(self.car_mask, offset)
         
-
     def draw(self):
         ses.screen.blit(self.back, (0, 0))
         ses.screen.blit(self.track, self.border_pos)
@@ -108,32 +138,6 @@ class Background:
         ses.screen.blit(self.finish, (200, 330))
         
         # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
-        
-        lines = [((300, 40), (300, 650), (0, 0, 255)),
-                 ((200, 130), (400, 130), (0, 0, 255)),
-                 ((320, 390), (520, 390), (0, 0, 255)),
-                 ((420, 150), (420, 500), (0, 0, 255)),
-                 ((530, 30), (530, 400), (0, 0, 255)),
-                 ((440, 125), (1030, 125), (0, 0, 255)),
-                 ((940, 40), (940, 320), (0, 0, 255)),
-                 ((620, 240), (1050, 240), (0, 0, 255)),
-                 ((680, 240), (680, 440), (0, 0, 255)),
-                 ((570, 340), (1000, 340), (0, 0, 255)),
-                 ((600, 440), (1030, 440), (0, 0, 255)),
-                 ((940, 360), (940, 840), (0, 0, 255)),
-                 ((800, 750), (1030, 750), (0, 0, 255)),
-                 ((890, 600), (890, 840), (0, 0, 255)),
-                 ((580, 580), (870, 580), (0, 0, 255)),
-                 ((780, 490), (780, 770), (0, 0, 255)),
-                 ((680, 490), (680, 770), (0, 0, 255)),
-                 ((570, 570), (570, 840), (0, 0, 255)),
-                 ((170, 370), (620, 820), (0, 0, 255)),
-                 ]
-
-        for start, end, color in lines:
-            pg.draw.line(ses.screen, color, start, end, 2)
-
-        
         
     def collision_finish(self, car):
         car_rect = car.car_rect #cette ligne sert a récupérer les coordonnées de la voiture
@@ -168,12 +172,11 @@ class Score:
             car.reset()
             
 
-
-    def draw(self): #pour affichage du timer
-        font = pg.font.Font(pg.font.match_font('arial'), 20) #police d'écriture
+    def draw(self, car): #pour affichage du timer
+        font = pg.font.Font(pg.font.match_font('arial'), 20) 
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
-        text_surface = font.render(text, True, WHITE)   #création de la surface de texte
-        text_rect = text_surface.get_rect() #récupération du rectangle de la surface de texte
+        text_surface = font.render(text, True, WHITE) 
+        text_rect = text_surface.get_rect() 
         text_rect.topleft = (10, 800)
         ses.screen.blit(text_surface, text_rect)
         
@@ -186,6 +189,14 @@ class Score:
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
         ses.screen.blit(text_surface1, text_rect1)
+        
+        progress = f"Progression : {car.progression():.2f}%"
+        text_surface2 = font.render(progress, True, WHITE)
+        text_rect2 = text_surface2.get_rect()
+        text_rect2.topleft = (10, 760)
+        ses.screen.blit(text_surface2, text_rect2)
+        
+
         
 
 
@@ -240,13 +251,11 @@ class Session:
         self.score.update(self.car)
         self.clock.tick(FPS)
     
-        
     def draw(self):
         self.background.draw()
         self.car.draw()
-        self.score.draw()
+        self.score.draw(self.car)
         pg.display.flip()
-
 
     def run(self):
         running = True
@@ -299,5 +308,34 @@ if __name__ == '__main__':
     
     
 
-# a faire : niveau d'avancee sur le circuit
 
+
+
+
+
+
+
+
+# lines = [((300, 40), (300, 650), (0, 0, 255)),
+        #          ((200, 130), (400, 130), (0, 0, 255)),
+        #          ((320, 390), (520, 390), (0, 0, 255)),
+        #          ((420, 150), (420, 500), (0, 0, 255)),
+        #          ((530, 30), (530, 400), (0, 0, 255)),
+        #          ((440, 125), (1030, 125), (0, 0, 255)),
+        #          ((940, 40), (940, 320), (0, 0, 255)),
+        #          ((620, 240), (1050, 240), (0, 0, 255)),
+        #          ((680, 240), (680, 440), (0, 0, 255)),
+        #          ((570, 340), (1000, 340), (0, 0, 255)),
+        #          ((600, 440), (1030, 440), (0, 0, 255)),
+        #          ((940, 360), (940, 840), (0, 0, 255)),
+        #          ((800, 750), (1030, 750), (0, 0, 255)),
+        #          ((890, 600), (890, 840), (0, 0, 255)),
+        #          ((580, 580), (870, 580), (0, 0, 255)),
+        #          ((780, 490), (780, 770), (0, 0, 255)),
+        #          ((680, 490), (680, 770), (0, 0, 255)),
+        #          ((570, 570), (570, 840), (0, 0, 255)),
+        #          ((170, 370), (620, 820), (0, 0, 255)),
+        #          ]
+
+        # for start, end, color in lines:
+        #     pg.draw.line(ses.screen, color, start, end, 2)
