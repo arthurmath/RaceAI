@@ -1,30 +1,62 @@
 from adn import Adn
-from gameModule import (
-    RIGHT,
-    LEFT,
-    DOWN,
-    UP,
-    SNAKE_CHAR,
-    FOOD_CHAR,
-    WALL_CHAR,
-)
+from main import Car
+import pygame as pg
+import math
 
 
-class Pilot:
+class Pilot(Car):
     """ Represents the AI that plays RaceAI """
 
     def __init__(self, adn): 
+        super().__init__() # appelle la classe parent et l'initialise
         self.adn = adn
         self.fitness = None
         self.nbrMove = 0
         self.previous_moves = []
-        self.MOVEMENT = (RIGHT, LEFT, UP, DOWN)
+        self.actions = ['U', 'D', 'L', 'R']
+        
+    def update(self):
+            
+        moved = False  
+        self.progres = self.progression()   
+        action = self.choose_next_move()
 
-    def choose_next_move(self, state):
+        match action:
+            case 'L':
+                self.angle += self.rotation_speed 
+            case 'R':
+                self.angle -= self.rotation_speed
+            case 'U':
+                moved = True
+                self.speed = min(self.speed + self.acceleration, self.max_speed)
+            case 'D':
+                moved = True
+                self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
+
+        if not moved:
+            if self.speed > 0:
+                self.speed = max(self.speed - self.acceleration, 0)
+            else:
+                self.speed = min(self.speed + self.acceleration, 0)
+
+
+        if self.collision != None:
+            if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
+                self.speed = - self.speed / 2
+                self.compteur = 10
+        self.compteur -= 1
+            
+
+        rad = math.radians(self.angle)
+        self.y -= self.speed * math.cos(rad) 
+        self.x -= self.speed * math.sin(rad) 
+        
+
+    def choose_next_move(self):
         """ Choose a new move based on its state.
         Return the movement choice of the snake (tuple) """
         
-        vision = self.get_simplified_state(state)
+        vision = [self.x, self.y, self.speed, self.angle, self.collision, self.progres]
         
         self.nbrMove += 1
         movesValues = self.adn.neural_network_forward(vision) 
@@ -38,10 +70,10 @@ class Pilot:
                 choice = i
 
         
-        self.previous_moves.append(self.MOVEMENT[choice])
+        self.previous_moves.append(self.actions[choice])
         if len(self.previous_moves) >= 3:
             self.previous_moves.pop(0)
-        return self.MOVEMENT[choice]
+        return self.actions[choice]
 
     def get_simplified_state(self, state):
         """
@@ -117,5 +149,4 @@ class Pilot:
     
 
     def reset_state(self):
-        
         self.nbrMove = 0

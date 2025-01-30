@@ -30,12 +30,12 @@ class Car:
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
             self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
-        self.dist_deja_parcourue = 0
         
         
     def update(self):
                
-        moved = False     
+        moved = False  
+        self.progres = self.progression()   
         keys = pg.key.get_pressed()
 
         if keys[pg.K_LEFT]:
@@ -57,7 +57,7 @@ class Car:
 
 
         if self.collision != None:
-            if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois /sec), sinon bug
+            if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 self.speed = - self.speed / 2
                 self.compteur = 10
         self.compteur -= 1
@@ -132,29 +132,29 @@ class Background:
         
         # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
         
-        lines = [((300, 40), (300, 650), (0, 0, 255)),
-                 ((200, 130), (400, 130), (0, 0, 255)),
-                 ((320, 390), (520, 390), (0, 0, 255)),
-                 ((420, 150), (420, 500), (0, 0, 255)),
-                 ((530, 30), (530, 400), (0, 0, 255)),
-                 ((440, 125), (1030, 125), (0, 0, 255)),
-                 ((940, 40), (940, 320), (0, 0, 255)),
-                 ((620, 240), (1050, 240), (0, 0, 255)),
-                 ((680, 240), (680, 440), (0, 0, 255)),
-                 ((570, 340), (1000, 340), (0, 0, 255)),
-                 ((600, 440), (1030, 440), (0, 0, 255)),
-                 ((940, 360), (940, 840), (0, 0, 255)),
-                 ((800, 750), (1030, 750), (0, 0, 255)),
-                 ((890, 600), (890, 840), (0, 0, 255)),
-                 ((580, 580), (870, 580), (0, 0, 255)),
-                 ((780, 490), (780, 770), (0, 0, 255)),
-                 ((680, 490), (680, 770), (0, 0, 255)),
-                 ((570, 570), (570, 840), (0, 0, 255)),
-                 ((170, 370), (620, 820), (0, 0, 255)),
-                 ]
+        # lines = [((300, 40), (300, 650), (0, 0, 255)),
+        #          ((200, 130), (400, 130), (0, 0, 255)),
+        #          ((320, 390), (520, 390), (0, 0, 255)),
+        #          ((420, 150), (420, 500), (0, 0, 255)),
+        #          ((530, 30), (530, 400), (0, 0, 255)),
+        #          ((440, 125), (1030, 125), (0, 0, 255)),
+        #          ((940, 40), (940, 320), (0, 0, 255)),
+        #          ((620, 240), (1050, 240), (0, 0, 255)),
+        #          ((680, 240), (680, 440), (0, 0, 255)),
+        #          ((570, 340), (1000, 340), (0, 0, 255)),
+        #          ((600, 440), (1030, 440), (0, 0, 255)),
+        #          ((940, 360), (940, 840), (0, 0, 255)),
+        #          ((800, 750), (1030, 750), (0, 0, 255)),
+        #          ((890, 600), (890, 840), (0, 0, 255)),
+        #          ((580, 580), (870, 580), (0, 0, 255)),
+        #          ((780, 490), (780, 770), (0, 0, 255)),
+        #          ((680, 490), (680, 770), (0, 0, 255)),
+        #          ((570, 570), (570, 840), (0, 0, 255)),
+        #          ((170, 370), (620, 820), (0, 0, 255)),
+        #          ]
 
-        for start, end, color in lines:
-            pg.draw.line(ses.screen, color, start, end, 2)
+        # for start, end, color in lines:
+        #     pg.draw.line(ses.screen, color, start, end, 2)
         
         
     def collision_finish(self, car):
@@ -210,7 +210,7 @@ class Score:
         ses.screen.blit(text_surface1, text_rect1)
         
         # affichage progression
-        text2 = f"Progression : {car.progression():.3f}%"
+        text2 = f"Progression : {car.progres:.3f}%"
         text_surface2 = self.font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
         text_rect2.topleft = (10, 760)
