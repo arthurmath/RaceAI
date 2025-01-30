@@ -26,16 +26,11 @@ class Car:
         self.compteur = 0 # pour les collisions
         
         self.checkpoints = [(240, 275), (240, 130), (302, 75), (360, 130), (370, 390), (425, 450), (480, 390),  
-                            (480, 125), (530, 80), (940, 80), (985, 125), (990, 240), (940, 280), (680, 280),
-                            (620, 340), (680, 400), (940, 400), (990, 440), (990, 750), (940, 800), (890, 800),
-                            (840, 750), (830, 580), (780, 530), (680, 530), (680, 530), (634, 582), (237, 439), (299, 582),]
-                            #(571, 798)]
-        
-        self.checkpoints_fin = [ (780, 532),(845, 751),
+                            (480, 125), (970, 95), (970, 270), ]
+        self.checkpoints_fin = [(237, 439),(299, 582),(571, 798), (634, 582), (680, 534), (780, 532),(845, 751),
                                 (890, 802),(940, 798),(986, 752),(986, 442),(940, 400),(681, 387),(614, 343),(680, 279),
                                 (940, 278),(989, 242),(986, 128),(941, 80),(531, 75),(485, 127),(480, 390),(421, 450),
-                                (372, 392),(362, 131),(300, 74), (240, 132), (240, 199), (239, 274)]
-        
+                                (372, 392),(362, 131),(300, 74), (240, 132),(240, 199),(239, 274)]
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
             self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
@@ -104,6 +99,9 @@ class Car:
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
         for checkpoint in self.checkpoints:
+            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
+
+        for checkpoint in self.checkpoints_fin:
             pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
@@ -239,6 +237,12 @@ class Session:
         # self.music()
         self.load_images()
         self.generate_objects()
+        #curseur
+        self.editing_checkpoints = True
+        self.checkpoints_fin = []
+
+
+
         
     def music(self):
         self.music = pg.mixer.music.load('BandeOrganise.mp3')
@@ -291,6 +295,13 @@ class Session:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+                if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                    pos = pg.mouse.get_pos()
+                    self.checkpoints_fin.append(pos)
+                    print(f"Checkpoint ajouté : {pos}")
+
+                self.update()
+                self.draw()
         
             self.update()
             self.draw()
