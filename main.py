@@ -26,13 +26,35 @@ class Car:
         self.collision = None
         self.compteur = 0 # pour les collisions
         
-        self.checkpoints = [(240, 275), (302, 75), (425, 450), (500, 95), (970, 95), (970, 270)]
+        self.checkpoints = [(240, 275), (240, 130), (302, 75), (360, 130), (370, 390), (425, 450), (480, 390),  
+                            (480, 125), (970, 95), (970, 270), ]
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
             self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
         
         
     def update(self):
+        
+        self.lines = [((300, 40), (300, 650), (0, 0, 255)),
+                 ((200, 130), (400, 130), (255, 0, 255)),
+                 ((320, 390), (520, 390), (0, 0, 255)),
+                 ((420, 150), (420, 500), (0, 0, 255)),
+                 ((530, 30), (530, 400), (0, 0, 255)),
+                 ((440, 125), (1030, 125), (0, 0, 255)),
+                 ((940, 40), (940, 320), (0, 0, 255)),
+                 ((620, 240), (1050, 240), (0, 0, 255)),
+                 ((680, 240), (680, 440), (0, 0, 255)),
+                 ((570, 340), (1000, 340), (0, 0, 255)),
+                 ((600, 440), (1030, 440), (0, 0, 255)),
+                 ((940, 360), (940, 840), (0, 0, 255)),
+                 ((800, 750), (1030, 750), (0, 0, 255)),
+                 ((890, 600), (890, 840), (0, 0, 255)),
+                 ((580, 580), (870, 580), (0, 0, 255)),
+                 ((780, 490), (780, 770), (0, 0, 255)),
+                 ((680, 490), (680, 770), (0, 0, 255)),
+                 ((570, 570), (570, 840), (0, 0, 255)),
+                 ((170, 370), (620, 820), (0, 0, 255)),
+                 ]
                
         moved = False  
         self.progres = self.progression()   
@@ -77,7 +99,10 @@ class Car:
             pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
+        ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
+        
+        for start, end, color in self.lines:
+            pg.draw.line(ses.screen, color, start, end, 2)
     
     
     def progression(self):
@@ -130,31 +155,7 @@ class Background:
         ses.screen.blit(self.border, self.border_pos)
         ses.screen.blit(self.finish, (200, 330))
         
-        # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
-        
-        # lines = [((300, 40), (300, 650), (0, 0, 255)),
-        #          ((200, 130), (400, 130), (0, 0, 255)),
-        #          ((320, 390), (520, 390), (0, 0, 255)),
-        #          ((420, 150), (420, 500), (0, 0, 255)),
-        #          ((530, 30), (530, 400), (0, 0, 255)),
-        #          ((440, 125), (1030, 125), (0, 0, 255)),
-        #          ((940, 40), (940, 320), (0, 0, 255)),
-        #          ((620, 240), (1050, 240), (0, 0, 255)),
-        #          ((680, 240), (680, 440), (0, 0, 255)),
-        #          ((570, 340), (1000, 340), (0, 0, 255)),
-        #          ((600, 440), (1030, 440), (0, 0, 255)),
-        #          ((940, 360), (940, 840), (0, 0, 255)),
-        #          ((800, 750), (1030, 750), (0, 0, 255)),
-        #          ((890, 600), (890, 840), (0, 0, 255)),
-        #          ((580, 580), (870, 580), (0, 0, 255)),
-        #          ((780, 490), (780, 770), (0, 0, 255)),
-        #          ((680, 490), (680, 770), (0, 0, 255)),
-        #          ((570, 570), (570, 840), (0, 0, 255)),
-        #          ((170, 370), (620, 820), (0, 0, 255)),
-        #          ]
-
-        # for start, end, color in lines:
-        #     pg.draw.line(ses.screen, color, start, end, 2)
+        ses.screen.blit(self.border_mask_img, self.border_pos) # mask
         
         
     def collision_finish(self, car):
@@ -325,7 +326,7 @@ if __name__ == '__main__':
     
     
     
-
+# refaire collisions avec border 
 
 
 
