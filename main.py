@@ -5,7 +5,7 @@ import sys
 import math
 import numpy as np
 
-
+print("test1")
     
 class Car:
     def __init__(self, ses): 
