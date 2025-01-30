@@ -78,23 +78,6 @@ class Car:
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
-        
-    
-    # def progression(self):
-    #     """ Calcule l'avancée de la voiture sur le circuit """
-        
-    #     distance_parcourue = 0
-    #     for i in range(len(self.checkpoints) - 1):
-    #         if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
-    #             # Si la voiture est entre deux checkpoints
-    #             distance_parcourue += math.dist(self.checkpoints[i], (self.x, self.y))
-    #             break
-    #         else:
-    #             # Sinon on ajoute la distance entre les 2 derniers checkpoints
-    #             distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
-        
-    #     progression = (distance_parcourue / self.total_distance) * 100
-    #     return min(max(progression, 0), 100)
     
     
     def progression(self):
@@ -113,7 +96,6 @@ class Car:
         progression = (distance_parcourue / self.total_distance) * 100
         return min(max(progression, 0), 100)
 
-        
         
     def reset(self):
         self.x, self.y = self.initial_pos
@@ -135,11 +117,11 @@ class Background:
         self.border_pos = (170, -10)
         self.border_mask = pg.mask.from_surface(self.border)
         self.border_mask_img = show_mask(self.border)
-        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) #on crée un rect pour la ligne d'arrivée
+        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) # on crée un rect pour la ligne d'arrivée
         
     def update(self, car):
         self.car_mask = pg.mask.from_surface(car.car_img)
-        offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # Correspond à la différence des coordonnées des 2 masques.
+        offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
         car.collision = self.border_mask.overlap(self.car_mask, offset)
         
     def draw(self):
@@ -149,6 +131,30 @@ class Background:
         ses.screen.blit(self.finish, (200, 330))
         
         # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
+        
+        lines = [((300, 40), (300, 650), (0, 0, 255)),
+                 ((200, 130), (400, 130), (0, 0, 255)),
+                 ((320, 390), (520, 390), (0, 0, 255)),
+                 ((420, 150), (420, 500), (0, 0, 255)),
+                 ((530, 30), (530, 400), (0, 0, 255)),
+                 ((440, 125), (1030, 125), (0, 0, 255)),
+                 ((940, 40), (940, 320), (0, 0, 255)),
+                 ((620, 240), (1050, 240), (0, 0, 255)),
+                 ((680, 240), (680, 440), (0, 0, 255)),
+                 ((570, 340), (1000, 340), (0, 0, 255)),
+                 ((600, 440), (1030, 440), (0, 0, 255)),
+                 ((940, 360), (940, 840), (0, 0, 255)),
+                 ((800, 750), (1030, 750), (0, 0, 255)),
+                 ((890, 600), (890, 840), (0, 0, 255)),
+                 ((580, 580), (870, 580), (0, 0, 255)),
+                 ((780, 490), (780, 770), (0, 0, 255)),
+                 ((680, 490), (680, 770), (0, 0, 255)),
+                 ((570, 570), (570, 840), (0, 0, 255)),
+                 ((170, 370), (620, 820), (0, 0, 255)),
+                 ]
+
+        for start, end, color in lines:
+            pg.draw.line(ses.screen, color, start, end, 2)
         
         
     def collision_finish(self, car):
@@ -164,37 +170,40 @@ class Score:
         self.start_ticks = pg.time.get_ticks() 
         self.background = background
         self.car = car
-        self.high_time = np.inf
+        self.update_high_score()
         self.font = pg.font.Font(pg.font.match_font('arial'), 20) # police d'écriture
-            
+        
+    def update_high_score(self):
+        """ Met à jour high_score avec le meilleur temps du fichier """
+        with open("times.txt", "r") as f:
+            self.high_score = min(float(line) for line in f)
+    
             
     def update(self, car):
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         
         if self.background.collision_finish(self.car):
-            if self.temps_ecoule < self.high_time: # si le temps realisé est meilleur que l'ancien record
+            if self.temps_ecoule < self.high_score: # si le temps realisé est meilleur que l'ancien record
                 if self.temps_ecoule > 20: # pour ne pas sauvegarder les marches arrières sur le finish
-                    self.high_time = self.temps_ecoule 
+                    self.high_score = self.temps_ecoule 
                     with open("times.txt", "a") as file:
-                        file.write(f"{self.high_time:.3f}\n")
+                        file.write(f"{self.high_score:.3f}\n")
                 
             self.start_ticks = pg.time.get_ticks() # reset timer
             car.reset()
+            self.update_high_score()
     
 
     def draw(self, car): 
         # affichage du timer
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
-        text_surface = self.font.render(text, True, WHITE)   #création de la surface du texte
-        text_rect = text_surface.get_rect() #récupération du rectangle de la surface du texte
+        text_surface = self.font.render(text, True, WHITE)   # création de la surface du texte
+        text_rect = text_surface.get_rect() # récupération du rectangle de la surface du texte
         text_rect.topleft = (10, 800)
         ses.screen.blit(text_surface, text_rect)
         
         # affichage high score
-        if self.high_time == np.inf:
-            text1 = f"Meilleur temps : Aucun"
-        else:
-            text1 = f"Meilleur temps : {self.high_time}"
+        text1 = f"Meilleur temps : {self.high_score:.3f}s"
         text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
@@ -324,26 +333,3 @@ if __name__ == '__main__':
 
 
 
-# lines = [((300, 40), (300, 650), (0, 0, 255)),
-#                  ((200, 130), (400, 130), (0, 0, 255)),
-#                  ((320, 390), (520, 390), (0, 0, 255)),
-#                  ((420, 150), (420, 500), (0, 0, 255)),
-#                  ((530, 30), (530, 400), (0, 0, 255)),
-#                  ((440, 125), (1030, 125), (0, 0, 255)),
-#                  ((940, 40), (940, 320), (0, 0, 255)),
-#                  ((620, 240), (1050, 240), (0, 0, 255)),
-#                  ((680, 240), (680, 440), (0, 0, 255)),
-#                  ((570, 340), (1000, 340), (0, 0, 255)),
-#                  ((600, 440), (1030, 440), (0, 0, 255)),
-#                  ((940, 360), (940, 840), (0, 0, 255)),
-#                  ((800, 750), (1030, 750), (0, 0, 255)),
-#                  ((890, 600), (890, 840), (0, 0, 255)),
-#                  ((580, 580), (870, 580), (0, 0, 255)),
-#                  ((780, 490), (780, 770), (0, 0, 255)),
-#                  ((680, 490), (680, 770), (0, 0, 255)),
-#                  ((570, 570), (570, 840), (0, 0, 255)),
-#                  ((170, 370), (620, 820), (0, 0, 255)),
-#                  ]
-
-#         for start, end, color in lines:
-#             pg.draw.line(ses.screen, color, start, end, 2)
