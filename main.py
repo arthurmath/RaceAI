@@ -5,7 +5,6 @@ import sys
 import math
 import numpy as np
 
-print("test1")
     
 class Car:
     def __init__(self, ses): 
@@ -27,7 +26,16 @@ class Car:
         self.compteur = 0 # pour les collisions
         
         self.checkpoints = [(240, 275), (240, 130), (302, 75), (360, 130), (370, 390), (425, 450), (480, 390),  
-                            (480, 125), (970, 95), (970, 270), ]
+                            (480, 125), (530, 80), (940, 80), (985, 125), (990, 240), (940, 280), (680, 280),
+                            (620, 340), (680, 400), (940, 400), (990, 440), (990, 750), (940, 800), (890, 800),
+                            (840, 750), (830, 580), (780, 530), (680, 530), (680, 530), (634, 582), (237, 439), (299, 582),]
+                            #(571, 798)]
+        
+        self.checkpoints_fin = [ (780, 532),(845, 751),
+                                (890, 802),(940, 798),(986, 752),(986, 442),(940, 400),(681, 387),(614, 343),(680, 279),
+                                (940, 278),(989, 242),(986, 128),(941, 80),(531, 75),(485, 127),(480, 390),(421, 450),
+                                (372, 392),(362, 131),(300, 74), (240, 132), (240, 199), (239, 274)]
+        
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
             self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
@@ -99,7 +107,7 @@ class Car:
             pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
+        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
         
         for start, end, color in self.lines:
             pg.draw.line(ses.screen, color, start, end, 2)
@@ -155,7 +163,7 @@ class Background:
         ses.screen.blit(self.border, self.border_pos)
         ses.screen.blit(self.finish, (200, 330))
         
-        ses.screen.blit(self.border_mask_img, self.border_pos) # mask
+        # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
         
         
     def collision_finish(self, car):
