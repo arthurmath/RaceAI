@@ -39,7 +39,7 @@ class Car:
     def update(self):
     
         moved = False  
-        self.progres = self.progression()   
+        self.progression = self.get_progression()   
         
         moves = []
         
@@ -125,7 +125,7 @@ class Car:
             pg.draw.line(ses.screen, color, start, end, 2)
     
     
-    def progression(self):
+    def get_progression(self):
         """ Calcule l'avancée de la voiture sur le circuit """
         
         distance_parcourue = 0
@@ -232,7 +232,7 @@ class Score:
         ses.screen.blit(text_surface1, text_rect1)
         
         # affichage progression
-        text2 = f"Progression : {car.progres:.3f}%"
+        text2 = f"Progression : {car.progression:.3f}%"
         text_surface2 = self.font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
         text_rect2.topleft = (10, 760)

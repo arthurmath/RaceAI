@@ -1,5 +1,6 @@
 
 
+# CuPy est une bibliothèque qui fonctionne comme NumPy mais qui exécute les opérations sur GPU via CUDA.
 # !pip install cupy-cuda12x  # Remplace "12x" par ta version de CUDA
 
 import cupy as cp  # Remplace np par cp
@@ -15,7 +16,7 @@ print(c)  # Résultat stocké sur GPU
 
 
 
-
+# Numba pour accélérer les boucles (JIT Compilation)
 # !pip install numba 
 
 from numba import cuda
@@ -51,7 +52,7 @@ print(c[:10])  # Affiche quelques résultats
 
 
 
-
+# JAX est une bibliothèque de Google qui accélère NumPy via GPU.
 # !pip install jax jaxlib
 
 
