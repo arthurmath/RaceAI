@@ -8,6 +8,8 @@ vision = [1, 2, *liste]
 
 # print(vision)
 
+
+
 a = [[1, 0], [0, 1]]
 b = [4, 1]
 

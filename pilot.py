@@ -20,14 +20,16 @@ class Pilot():
         
         self.nbMove += 1
         
+        # il faudrait que les entrées soient entre -1 et 1
         vision = [car.x, car.y, car.speed, car.angle, car.collision, car.progres, *self.previous_moves] # * permet de déplier la liste
+        print(vision)
     
         movesValues = self.adn.neural_network_forward(vision) 
-        movesValues = movesValues.tolist()
-        #print(movesValues)
+        movesValues = movesValues.tolist()[0]
+        print(movesValues)
 
         # Chooses the best move (the move with the highest value)
-        choice = movesValues[0].index(max(movesValues[0]))
+        choice = movesValues.index(max(movesValues))
         
         # TODO à remplacer avec les moves > 80% ?
         # moves = []
