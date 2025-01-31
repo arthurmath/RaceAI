@@ -14,7 +14,7 @@ class Adn:
         else:
             self.layersSize = [3, 2]
             
-        self.layersSize.insert(0, 6)  # Number of input neurons
+        self.layersSize.insert(0, 8)  # Number of input neurons
         self.layersSize.append(4)  # Number of output neurons
         
         if weights is not None :
@@ -44,14 +44,16 @@ class Adn:
                
     
     def neural_network_forward(self, vector):
-        
         for weight, bias in zip(self.weights, self.bias):
-            vector = vector.dot(weight) + bias
+            vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
             vector = np.maximum(vector, 0)  # Relu function
             
         return vector
 
 
+
+    # Pour l'entrainement
+    
     def mix(self, other, mutationRate=0.01):
         """
         Mix the copy of this DNA with the copy of another one to create a new one.
@@ -110,20 +112,16 @@ class Adn:
 # print(adn.bias)
 # print()
 
-# inputs = np.array([rd.random() for _ in range(6)])
+# inputs = np.array([rd.random() for _ in range(8)])
 
 # print(adn.neural_network_forward(inputs))
 # print()
 
 
-adn1 = Adn()
-adn2 = Adn()
-adn3 = adn1.mix(adn2)
-print(adn3.weights)
+# adn1 = Adn()
+# adn2 = Adn()
+# adn3 = adn1.mix(adn2)
+# print(adn3.weights)
 
 
 
-
-# Entrées du réseau de neurones : x, y, speed, angle, collision, progression (6)
-# Sorties du réseau de neurones : acceleration, deceleration, gauche, droite (4)
-# Fonction à optimiser : progression ** 2 * (1/NbCollisions) * (1/temps)

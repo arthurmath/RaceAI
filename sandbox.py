@@ -1,16 +1,14 @@
 import math
+import numpy as np
 
 
-checkpoints = [[1, 1], [1, 2], [1, 3]] 
 
+liste = [3, 4]
+vision = [1, 2, *liste]
 
-print(math.dist([1, 1], [1, 2]))
+# print(vision)
 
-total_distance = 0
-for i in range(len(checkpoints) - 1):
-    print(checkpoints[i])
-    total_distance += math.dist(checkpoints[i], checkpoints[i + 1])
-    
-print(total_distance)
-    
-    
+a = [[1, 0], [0, 1]]
+b = [4, 1]
+
+print(np.dot(b, a))

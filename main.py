@@ -1,9 +1,9 @@
 import pygame as pg
 import numpy as np
-import random
 import sys
 import math
-import numpy as np
+from pilot import Pilot
+from adn import Adn
 
     
 class Car:
@@ -22,7 +22,7 @@ class Car:
         self.car_rect.top = HEIGHT / 2 - 50
         self.car_rect.width = 45
         
-        self.collision = None
+        self.collision = 0
         self.compteur = 0 # pour les collisions
         
         self.checkpoints = [(240, 275), (240, 130), (302, 75), (360, 130), (370, 390), (425, 450), (480, 390),  
@@ -37,57 +37,50 @@ class Car:
         
         
     def update(self):
-        
-        self.lines = [((300, 40), (300, 650), (0, 0, 255)),
-                 ((200, 130), (400, 130), (255, 0, 255)),
-                 ((320, 390), (520, 390), (0, 0, 255)),
-                 ((420, 150), (420, 500), (0, 0, 255)),
-                 ((530, 30), (530, 400), (0, 0, 255)),
-                 ((440, 125), (1030, 125), (0, 0, 255)),
-                 ((940, 40), (940, 320), (0, 0, 255)),
-                 ((620, 240), (1050, 240), (0, 0, 255)),
-                 ((680, 240), (680, 440), (0, 0, 255)),
-                 ((570, 340), (1000, 340), (0, 0, 255)),
-                 ((600, 440), (1030, 440), (0, 0, 255)),
-                 ((940, 360), (940, 840), (0, 0, 255)),
-                 ((800, 750), (1030, 750), (0, 0, 255)),
-                 ((890, 600), (890, 840), (0, 0, 255)),
-                 ((580, 580), (870, 580), (0, 0, 255)),
-                 ((780, 490), (780, 770), (0, 0, 255)),
-                 ((680, 490), (680, 770), (0, 0, 255)),
-                 ((570, 570), (570, 840), (0, 0, 255)),
-                 ((170, 370), (620, 820), (0, 0, 255)),
-                 ]
-               
+    
         moved = False  
         self.progres = self.progression()   
-        keys = pg.key.get_pressed()
-
-        if keys[pg.K_LEFT]:
+        
+        moves = []
+        
+        if ses.player == 1: 
+            keys = pg.key.get_pressed()
+            if keys[pg.K_LEFT]:
+                moves.append('L')
+            if keys[pg.K_RIGHT]:
+                moves.append('R')
+            if keys[pg.K_UP]:
+                moves.append('U')
+            if keys[pg.K_DOWN]:
+                moves.append('D')
+        else:
+            moves = ses.agent.choose_next_move(self)
+                    
+                    
+        if 'L' in moves:
             self.angle += self.rotation_speed 
-        if keys[pg.K_RIGHT]:
+        if 'R' in moves:
             self.angle -= self.rotation_speed
-        if keys[pg.K_UP]:
+        if 'U' in moves:
             moved = True
             self.speed = min(self.speed + self.acceleration, self.max_speed)
-        if keys[pg.K_DOWN]:
+        if 'D' in moves:
             moved = True
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
+                
 
-        if not moved:
+        if not moved: # inertie
             if self.speed > 0:
                 self.speed = max(self.speed - self.acceleration, 0)
             else:
                 self.speed = min(self.speed + self.acceleration, 0)
 
-
-        if self.collision != None:
+        if self.collision != 0:
             if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 self.speed = - self.speed / 2
                 self.compteur = 10
         self.compteur -= 1
             
-
         rad = math.radians(self.angle)
         self.y -= self.speed * math.cos(rad) 
         self.x -= self.speed * math.sin(rad) 
@@ -107,7 +100,28 @@ class Car:
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
         
-        for start, end, color in self.lines:
+        lines = [((300, 40), (300, 650), (0, 0, 255)),
+                 ((200, 130), (400, 130), (255, 0, 255)),
+                 ((320, 390), (520, 390), (0, 0, 255)),
+                 ((420, 150), (420, 500), (0, 0, 255)),
+                 ((530, 30), (530, 400), (0, 0, 255)),
+                 ((440, 125), (1030, 125), (0, 0, 255)),
+                 ((940, 40), (940, 320), (0, 0, 255)),
+                 ((620, 240), (1050, 240), (0, 0, 255)),
+                 ((680, 240), (680, 440), (0, 0, 255)),
+                 ((570, 340), (1000, 340), (0, 0, 255)),
+                 ((600, 440), (1030, 440), (0, 0, 255)),
+                 ((940, 360), (940, 840), (0, 0, 255)),
+                 ((800, 750), (1030, 750), (0, 0, 255)),
+                 ((890, 600), (890, 840), (0, 0, 255)),
+                 ((580, 580), (870, 580), (0, 0, 255)),
+                 ((780, 490), (780, 770), (0, 0, 255)),
+                 ((680, 490), (680, 770), (0, 0, 255)),
+                 ((570, 570), (570, 840), (0, 0, 255)),
+                 ((170, 370), (620, 820), (0, 0, 255)),
+                 ]
+        
+        for start, end, color in lines:
             pg.draw.line(ses.screen, color, start, end, 2)
     
     
@@ -153,7 +167,8 @@ class Background:
     def update(self, car):
         self.car_mask = pg.mask.from_surface(car.car_img)
         offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
-        car.collision = self.border_mask.overlap(self.car_mask, offset)
+        booleen = self.border_mask.overlap(self.car_mask, offset)
+        car.collision = 0 if booleen == None else 1
         
     def draw(self):
         ses.screen.blit(self.back, (0, 0))
@@ -228,20 +243,19 @@ class Score:
 
 
 class Session:
-    def __init__(self):
+    def __init__(self, player):
         pg.init()
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption('Race AI')
+        self.player = player
 
         # self.music()
         self.load_images()
         self.generate_objects()
-        #curseur
-        self.editing_checkpoints = True
+       
+        self.editing_checkpoints = True # curseur
         self.checkpoints_fin = []
-
-
 
         
     def music(self):
@@ -275,11 +289,16 @@ class Session:
         self.car = Car(self)
         self.background = Background(self)
         self.score = Score(self.background, self.car)
+        if self.player == 2:
+            # with open(Path(args.genetic), "rb") as f:
+            #     weights, bias = pickle.load(f)
+            self.agent = Pilot(Adn())
+            
         
         
     def update(self):
-        self.background.update(self.car)
         self.car.update()
+        self.background.update(self.car)
         self.score.update(self.car)
         self.clock.tick(FPS)
     
@@ -295,10 +314,10 @@ class Session:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
-                if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-                    pos = pg.mouse.get_pos()
-                    self.checkpoints_fin.append(pos)
-                    print(f"Checkpoint ajouté : {pos}")
+                # if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                #     pos = pg.mouse.get_pos()
+                #     self.checkpoints_fin.append(pos)
+                #     print(f"Checkpoint ajouté : {pos}")
 
                 self.update()
                 self.draw()
@@ -334,8 +353,10 @@ if __name__ == '__main__':
     WHITE = (255, 255, 255)
     FPS = 30 
     
+    print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
+    player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session()
+    ses = Session(player)
     ses.run()
     
     pg.quit()
