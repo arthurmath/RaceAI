@@ -4,7 +4,6 @@ import sys
 import math
 from pilot import Pilot
 from adn import Adn
-
     
 class Car:
     def __init__(self, ses): 
@@ -127,7 +126,7 @@ class Car:
     
     def get_progression(self):
         """ Calcule l'avancée de la voiture sur le circuit """
-        
+
         distance_parcourue = 0
         for i in range(len(self.checkpoints) - 1):
             if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
@@ -137,7 +136,7 @@ class Car:
             else:
                 # Sinon on ajoute la distance entre les 2 derniers checkpoints
                 distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
-        
+
         progression = (distance_parcourue / self.total_distance) * 100
         return min(max(progression, 0), 100)
 
@@ -352,6 +351,7 @@ if __name__ == '__main__':
     HEIGHT = 900
     WHITE = (255, 255, 255)
     FPS = 30 
+    
     
     print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     player = int(input("Entrez votre choix (1 ou 2) : "))
