@@ -1,20 +1,19 @@
 import numpy as np
 import time
+import timeit
 np.random.seed(42)
 
-print("start")
+
+size = 100
+print("start\n")
 
 
-size = 1000
 
 
-start = time.time()
 a = np.random.rand(size, size)
 b = np.random.rand(size, size)
-c = np.dot(a, b)
-print(c[0, 0])
-print("Temps ecoule Numpy :", time.time() - start, "\n")
-
+list_times = np.array(timeit.repeat('np.dot(a, b)', globals=globals(), number=100, repeat=100)) / 1e2
+print(f"Execution time Numpy : mean {(np.mean(list_times)/1e-3):.3f} ms, variance {(np.var(list_times)/1e-9):.2f} ns\n")
 
 
 
@@ -28,12 +27,11 @@ import jax.random as jrd
 key = jrd.PRNGKey(42)
 
 
-start = time.time()
 a = jrd.uniform(key, shape=(size, size))
 b = jrd.uniform(key, shape=(size, size))
-c = jnp.dot(a, b)
-print(c[0, 0])
-print("Temps ecoule JAX :", time.time() - start, "\n")
+list_times = np.array(timeit.repeat('jnp.dot(a, b)', globals=globals(), number=100, repeat=100)) / 1e2
+print(f"Execution time JAX : mean {(np.mean(list_times)/1e-3):.3f} ms, variance {(np.var(list_times)/1e-9):.2f} ns\n")
+
 
 
 
@@ -68,6 +66,16 @@ print("Temps ecoule JAX :", time.time() - start, "\n")
 #     if i < a.size:  
 #         c[i] = a[i] + b[i]
 
+# @cuda.jit(nopython=True)
+# def matrix_prod(A, B, C):
+#     for i in range(size):
+#         for j in range(size):
+#             d = 0.0
+#             for k in range(size):
+#                 d += A[i,k] * B[k, j]    # Sans le coût de l'indexation de la matrice
+#             C[i,j] = d
+#     return C
+
 
 # a = np.random.rand(size)
 # b = np.random.rand(size)
@@ -81,11 +89,12 @@ print("Temps ecoule JAX :", time.time() - start, "\n")
 # # Lancer le kernel sur GPU
 # threads_per_block = 256
 # blocks_per_grid = (size + threads_per_block - 1) // threads_per_block
-# add_arrays_gpu[blocks_per_grid, threads_per_block](d_a, d_b, d_c)
+# matrix_prod[blocks_per_grid, threads_per_block](d_a, d_b, d_c)
 
 # # Récupérer les résultats en mémoire CPU
 # c = d_c.copy_to_host()
 # print(c[0, 0])
+
 
 
 

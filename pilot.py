@@ -21,7 +21,7 @@ class Pilot():
         self.nbMove += 1
         
         # il faudrait que les entrées soient entre -1 et 1
-        vision = [car.x, car.y, car.speed, car.angle, car.collision, car.progres, *self.previous_moves] # * permet de déplier la liste
+        vision = [car.x, car.y, car.speed, car.angle, car.collision, car.progression, *self.previous_moves] # * permet de déplier la liste
         print(vision)
     
         movesValues = self.adn.neural_network_forward(vision) 

@@ -26,9 +26,9 @@ class Car:
         
 
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389),
-                                (482, 126), (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341),
-                                (681, 386), (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751),
-                                (831, 583), (780, 532), (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
+                            (482, 126), (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341),
+                            (681, 386), (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751),
+                            (831, 583), (780, 532), (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
 
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
@@ -96,7 +96,7 @@ class Car:
 
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask
+        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask  # TODO self.x ??
         
         lines = [((300, 40), (300, 650), (0, 0, 255)),
                  ((200, 130), (400, 130), (255, 0, 255)),
@@ -119,8 +119,8 @@ class Car:
                  ((170, 370), (620, 820), (0, 0, 255)),
                  ]
         
-        for start, end, color in lines:
-            pg.draw.line(ses.screen, color, start, end, 2)
+        # for start, end, color in lines:
+        #     pg.draw.line(ses.screen, color, start, end, 2)
     
     
     def get_progression(self):
@@ -355,10 +355,10 @@ if __name__ == '__main__':
     FPS = 30 
     
     
-    #print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
-    #player = int(input("Entrez votre choix (1 ou 2) : "))
+    print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
+    player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session(player=1)
+    ses = Session(player)
     ses.run()
     
     pg.quit()
