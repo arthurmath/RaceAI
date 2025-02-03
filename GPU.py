@@ -44,12 +44,12 @@ print(f"Execution time JAX : mean {(np.mean(list_times)/1e-3):.3f} ms, variance 
 
 # import cupy as cp  # Remplace np par cp
 
-# start = time.time()
 # a = cp.random.rand(size, size)
 # b = cp.random.rand(size, size)
-# c = cp.dot(a, b)
-# print(c[0, 0])
-# print("Temps ecoule Cupy :", time.time() - start, "\n")
+# list_times = np.array(timeit.repeat('cp.dot(a, b)', globals=globals(), number=100, repeat=100)) / 1e2
+# print(f"Execution time CUPY : mean {(np.mean(list_times)/1e-3):.3f} ms, variance {(np.var(list_times)/1e-9):.2f} ns\n")
+
+
 
 
 
@@ -61,7 +61,7 @@ print(f"Execution time JAX : mean {(np.mean(list_times)/1e-3):.3f} ms, variance 
 # from numba import cuda
 
 # @cuda.jit
-# def add_arrays_gpu(a, b, c): # produit scalaire
+# def scalar_prod(a, b, c):
 #     i = cuda.grid(1)
 #     if i < a.size:  
 #         c[i] = a[i] + b[i]
