@@ -57,7 +57,7 @@ class Pilot():
 
     def compute_fitness(self, car):
         
-        self.fitness = car.progression ** 2 / car.nbCollisions
+        self.fitness = car.progression ** 2 / car.nbCollisions if car.nbCollisions else car.progression ** 2
         return self.fitness
     
             

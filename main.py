@@ -35,7 +35,7 @@ class Car:
             
         
         
-    def update(self):
+    def update(self, ses):
     
         moved = False  
         self.progression = self.get_progression()   
@@ -88,7 +88,7 @@ class Car:
         # print([self.x, self.y, self.speed, self.angle, self.collision, self.progression])
 
 
-    def draw(self):
+    def draw(self, ses):
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
@@ -138,7 +138,7 @@ class Background:
         self.finish = ses.finish_img
         self.border_pos = (170, -10)
         self.border_mask = pg.mask.from_surface(self.border)
-        self.border_mask_img = show_mask(self.border)
+        # self.border_mask_img = show_mask(self.border)
         self.finish_rect = self.finish.get_rect(topleft=(200, 330)) # on crée un rect pour la ligne d'arrivée
         
     def update(self, car):
@@ -147,7 +147,7 @@ class Background:
         booleen = self.border_mask.overlap(self.car_mask, offset)
         car.collision = 0 if booleen == None else 1
         
-    def draw(self):
+    def draw(self, ses):
         ses.screen.blit(self.back, (0, 0))
         ses.screen.blit(self.track, self.border_pos)
         ses.screen.blit(self.border, self.border_pos)
@@ -194,7 +194,9 @@ class Score:
             self.update_high_score()
     
 
-    def draw(self, car): 
+    def draw(self, ses, car): 
+        WHITE = (255, 255, 255)
+        
         # affichage du timer
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
         text_surface = self.font.render(text, True, WHITE)
@@ -220,16 +222,21 @@ class Score:
 
 
 
-class Session:
-    def __init__(self, train, player, agent):
+class Session:        
+    def __init__(self, train, player, agent, display):
         pg.init()
         self.clock = pg.time.Clock()
+        self.train = train
         self.player = player
         self.agent = agent
+        self.display = display
+        self.width = 1200
+        self.height = 900
+        
         if train:
             self.startTrain = time.time()
-        else:
-            self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+        if display:
+            self.screen = pg.display.set_mode((self.width, self.height))
             pg.display.set_caption('Race AI')
 
         # self.music()
@@ -243,24 +250,24 @@ class Session:
         pg.mixer.music.play(-1)
         
     def load_images(self):
-        self.car_img = pg.image.load('images/car.png').convert_alpha()
+        self.car_img = pg.image.load('media/car.png').convert_alpha()
         img_width, img_height = self.car_img.get_size()
         self.car_img = pg.transform.scale(self.car_img, (img_width // 11, img_height // 11))
         self.car_img = pg.transform.rotate(self.car_img, 270)
         
         a = 1.0 # scale factor for the track
-        self.track_img = pg.image.load('images/track.png').convert_alpha()
+        self.track_img = pg.image.load('media/track.png').convert_alpha()
         img_width, img_height = self.track_img.get_size()
         self.track_img = pg.transform.scale(self.track_img, (img_width // a, img_height // a))
         
-        self.border_img = pg.image.load('images/track-border.png').convert_alpha()
+        self.border_img = pg.image.load('media/track-border.png').convert_alpha()
         img_width, img_height = self.border_img.get_size()
         self.border_img = pg.transform.scale(self.border_img, (img_width // a, img_height // a))
         
-        self.background_img = pg.image.load('images/background.jpg').convert()
-        self.background_img = pg.transform.scale(self.background_img, (WIDTH, HEIGHT))
+        self.background_img = pg.image.load('media/background.jpg').convert()
+        self.background_img = pg.transform.scale(self.background_img, (self.width, self.height))
 
-        self.finish_img = pg.image.load('images/finish.png').convert_alpha()
+        self.finish_img = pg.image.load('media/finish.png').convert_alpha()
         img_width, img_height = self.finish_img.get_size()
         self.finish_img = pg.transform.scale(self.finish_img, (img_width * 0.78 , img_height * 0.78))
         
@@ -276,18 +283,18 @@ class Session:
         
         
     def update(self):
-        self.car.update()
+        self.car.update(self)
         self.background.update(self.car)
         self.score.update(self.car)
-        self.clock.tick(FPS)
+        self.clock.tick(30) # FPS
     
     def draw(self):
-        self.background.draw()
-        self.car.draw()
-        self.score.draw(self.car)
+        self.background.draw(self)
+        self.car.draw(self)
+        self.score.draw(self, self.car)
         pg.display.flip()
 
-    def run(self, train):
+    def run(self):
         running = True
         while running:
             for event in pg.event.get():
@@ -296,10 +303,10 @@ class Session:
         
             self.update()
             
-            if train:
-                if time.time() - self.startTrain > 100:
+            if self.train:
+                if time.time() - self.startTrain > 30:
                     running = False
-            else:
+            if self.display:
                 self.draw()
             
     
@@ -324,20 +331,19 @@ if __name__ == '__main__':
 
         return mask_surface
 
-    
-    WIDTH = 1200
-    HEIGHT = 900
-    WHITE = (255, 255, 255)
-    FPS = 30 
+
     
     
     # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     # player = int(input("Entrez votre choix (1 ou 2) : "))
     
     train = False
+    player = 1
+    agent = None
+    display = True
     
-    ses = Session(train, player=1, agent=None)
-    ses.run(train)
+    ses = Session(train, player, agent, display)
+    ses.run()
     
     pg.quit()
     sys.exit(0)

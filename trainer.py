@@ -61,6 +61,9 @@ class GeneticAlgo:
             
             print(f"Generation {generation}, avg score: {self.avgGenScore}, best score: {self.bestGenScore}")
             generation += 1
+      
+            
+            
             
         
         self.evaluate_generation()
@@ -78,11 +81,12 @@ class GeneticAlgo:
         
         for pilot in self.pilots: # multiproccessing TODO
             
-            ses = Session(render=False, player=2, agent=pilot)
+            ses = Session(train=True, player=2, agent=pilot, display=True)
             ses.run()
             
             self.fitness.append(pilot.compute_fitness(ses.car))
             self.scores.append(ses.car.progression)
+            
             
             
         self.bestGenFitness = max(self.fitness)
