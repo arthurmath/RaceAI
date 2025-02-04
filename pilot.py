@@ -8,7 +8,6 @@ class Pilot():
         self.adn = adn
         self.fitness = None
         self.nbMove = 0
-        self.nbCollisions = 0
         self.actions = ['U', 'D', 'L', 'R']
         self.previous_moves = [0, 0]
         
@@ -21,12 +20,16 @@ class Pilot():
         self.nbMove += 1
         
         # il faudrait que les entrées soient entre -1 et 1
-        vision = [car.x, car.y, car.speed, car.angle, car.collision, car.progression, *self.previous_moves] # * permet de déplier la liste
+        vision = [car.x, car.y, car.speed, car.angle, car.collision, car.nbCollisions, car.progression, *self.previous_moves] # * permet de déplier la liste
+        print(vision)
+        list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 1], [0, 500], [0, 100], [0, 3], [0, 3]]
+        for idx, ranges in enumerate(list_ranges):
+            vision[idx] = self.scale(vision[idx], *ranges)
         print(vision)
     
         movesValues = self.adn.neural_network_forward(vision) 
         movesValues = movesValues.tolist()[0]
-        print(movesValues)
+        print(movesValues, "\n")
 
         # Chooses the best move (the move with the highest value)
         choice = movesValues.index(max(movesValues))
@@ -42,6 +45,12 @@ class Pilot():
             self.previous_moves.pop(0)
             
         return self.actions[choice]
+    
+    
+    def scale(self, x, a, b):
+        """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
+            en une valeur comprise dans l'intervalle [-1, 1]."""
+        return 2 * (x - a) / (b - a) - 1
 
 
 

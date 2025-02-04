@@ -21,6 +21,7 @@ class Car:
         
         self.collision = 0
         self.compteur = 0 # pour les collisions
+        self.nbCollisions = 0
         
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
                             (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
@@ -55,9 +56,9 @@ class Car:
                     
                     
         if 'L' in moves:
-            self.angle += self.rotation_speed 
+            self.angle = (self.angle + self.rotation_speed) % 360
         if 'R' in moves:
-            self.angle -= self.rotation_speed
+            self.angle = (self.angle - self.rotation_speed) % 360
         if 'U' in moves:
             moved = True
             self.speed = min(self.speed + self.acceleration, self.max_speed)
@@ -73,6 +74,7 @@ class Car:
                 self.speed = min(self.speed + self.acceleration, 0)
 
         if self.collision != 0:
+            self.nbCollisions += 1
             if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 self.speed = - self.speed / 2
                 self.compteur = 5
@@ -81,6 +83,8 @@ class Car:
         rad = math.radians(self.angle)
         self.y -= self.speed * math.cos(rad) 
         self.x -= self.speed * math.sin(rad) 
+        
+        # print([self.x, self.y, self.speed, self.angle, self.collision, self.progression])
 
 
     def draw(self):
@@ -216,12 +220,13 @@ class Score:
 
 
 class Session:
-    def __init__(self, player):
+    def __init__(self, render, player):
         pg.init()
         self.clock = pg.time.Clock()
-        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
-        pg.display.set_caption('Race AI')
         self.player = player
+        if render:
+            self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+            pg.display.set_caption('Race AI')
 
         # self.music()
         self.load_images()
@@ -278,7 +283,7 @@ class Session:
         self.score.draw(self.car)
         pg.display.flip()
 
-    def run(self):
+    def run(self, render):
         running = True
         while running:
             for event in pg.event.get():
@@ -286,7 +291,8 @@ class Session:
                     running = False
         
             self.update()
-            self.draw()
+            if render:
+                self.draw()
             
     
     
@@ -320,7 +326,7 @@ if __name__ == '__main__':
     # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     # player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session(player=1)
+    ses = Session(render=True, player=2)
     ses.run()
     
     pg.quit()

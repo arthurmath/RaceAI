@@ -12,9 +12,9 @@ class Adn:
         if layersSize is not None:
             self.layersSize = cp.deepcopy(layersSize)
         else:
-            self.layersSize = [3, 2]
+            self.layersSize = [10, 10]
             
-        self.layersSize.insert(0, 8)  # Number of input neurons
+        self.layersSize.insert(0, 9)  # Number of input neurons
         self.layersSize.append(4)  # Number of output neurons
         
         if weights is not None :
@@ -124,4 +124,4 @@ class Adn:
 # print(adn3.weights)
 
 
-
+# adn.neural_network_forward(input)

@@ -249,4 +249,3 @@ if __name__ == '__main__':
 # les collisions sont bonnes. 
 
 # le problème semble changer avec la scale de la voiture
-# ajouter une 2e voiture ? 
