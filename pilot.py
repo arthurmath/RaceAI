@@ -6,7 +6,7 @@ class Pilot():
 
     def __init__(self, adn): 
         self.adn = adn
-        self.fitness = None
+        self.fitness = 0
         self.nbMove = 0
         self.actions = ['U', 'D', 'L', 'R']
         self.previous_moves = [0, 0]
@@ -63,7 +63,7 @@ class Pilot():
             
     def mate(self, other, mutationRate=0.01):
         """ Mate with another pilot to create a new pilot """
-        newDna = self.dna.mix(other.dna, mutationRate)
+        newDna = self.adn.mix(other.dna, mutationRate)
         return Pilot(newDna)
     
 

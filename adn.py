@@ -7,13 +7,10 @@ rd.seed(42)
 
 class Adn:
     
-    def __init__(self, weights=None, biases=None, layersSize=None):
+    def __init__(self, weights=None, biases=None):
         
-        if layersSize is not None:
-            self.layersSize = cp.deepcopy(layersSize)
-        else:
-            self.layersSize = [10, 10]
-            # self.layersSize = [rd.randint(10, 15) for i in range(rd.randint(1, 3))]
+        self.layersSize = [15, 10]
+        # self.layersSize = [rd.randint(10, 15) for i in range(rd.randint(1, 3))]
             
         self.layersSize.insert(0, 9)  # Number of input neurons
         self.layersSize.append(4)  # Number of output neurons
@@ -59,7 +56,6 @@ class Adn:
     def mix(self, other, mutationRate=0.01):
         """
         Mix the copy of this DNA with the copy of another one to create a new one.
-        A crossover is first performed on the two DNA, giving a new one, then the new DNA is mutated.
         other (Dna): The other DNA used for the mixing
         mutationRate (float): The probability for a weight or bias to be mutated
         """

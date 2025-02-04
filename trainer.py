@@ -13,18 +13,18 @@ class GeneticAlgo:
     Class whose purpose is to make the snakes plays and create new generations of snakes.
     """
 
-    def __init__(self, nbPilotes, layersSize=None, mutation_rate=0.01, survival_rate=0.1):
+    def __init__(self, nbPilotes, mutation_rate, survival_rate, maxGenerations):
         """
         nbPilotes (int): The number of snake in each generation
-        layersSize (list): A list containing the number of hidden neurons for each layer
         mutation_rate (float): The probability for the DNA to mutate
         survival_rate (float): The proportion of snakes that will replay in the next generation
+        maxGenerations (int): Maximum number of generations
         """
         
         self.nbPilotes = nbPilotes
-        self.layersSize = layersSize
         self.mutationRate = mutation_rate
         self.survivalProportion = survival_rate
+        self.maxGenerations = maxGenerations
         
     
 
@@ -38,10 +38,10 @@ class GeneticAlgo:
         itEnd = 0
         
         
-        self.pilots = [Pilot(Adn(layersSize=self.layersSize)) for _ in range(self.nbPilotes)]
+        self.pilots = [Pilot(Adn()) for _ in range(self.nbPilotes)]
 
         # Create new generations until the stop condition is satisfied
-        while itEnd < 150 or generation < 1000:
+        while itEnd < 150 or generation < self.maxGenerations:
             
             # Evaluation
             self.evaluate_generation()        
@@ -155,12 +155,12 @@ class GeneticAlgo:
 if __name__ == "__main__":
     
     population = 1000
-    layers = [20, 10]
+    maxGenerations = 50 
     mutation_rate = 0.01
     survival_rate = 0.12
     
     
-    algo = GeneticAlgo(population, layers, mutation_rate, survival_rate)
+    algo = GeneticAlgo(population, mutation_rate, survival_rate, maxGenerations)
     algo.train()
     
     
