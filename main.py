@@ -78,7 +78,7 @@ class Car:
             self.nbCollisions += 1
             if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 self.speed = - self.speed / 2
-                self.compteur = 5
+                self.compteur = 4
         self.compteur -= 1
             
         rad = math.radians(self.angle)
@@ -238,7 +238,7 @@ class Session:
 
         
     def music(self):
-        self.music = pg.mixer.music.load('BandeOrganise.mp3')
+        self.music = pg.mixer.music.load('media/BandeOrganise.mp3')
         pg.mixer.music.set_volume(0.3)
         pg.mixer.music.play(-1)
         
@@ -336,7 +336,7 @@ if __name__ == '__main__':
     
     train = False
     
-    ses = Session(train, player=2, agent=None)
+    ses = Session(train, player=1, agent=None)
     ses.run(train)
     
     pg.quit()

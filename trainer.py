@@ -65,7 +65,7 @@ class GeneticAlgo:
         
         self.evaluate_generation()
         self.bests_survives()
-        self.bestPilot = self.bestPilots[-1]
+        self.bestPilotEver = self.bestPilots[-1]
             
 
             
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     files = listdir(Path("weights"))
     
     with open(Path("weights") / Path(str(algo.bestGenScore) + ".weights"), "wb") as f: # write binary
-        pickle.dump((algo.bestPilot.dna.weights, algo.bestPilot.dna.bias), f)
+        pickle.dump((algo.bestPilotEver.dna.weights, algo.bestPilotEver.dna.bias), f)
         
         
         
