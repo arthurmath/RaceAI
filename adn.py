@@ -44,6 +44,7 @@ class Adn:
             self.bias.append(np.array([rd.gauss(0, 0.5) for _ in range(nbrBias)]))
                
     
+    
     def neural_network_forward(self, vector):
         for weight, bias in zip(self.weights, self.bias):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
@@ -100,11 +101,13 @@ class Adn:
     def mutate_layer(self, layer, mutationRate=0.01):
         """ Add a value from a gaussian distribution of mean 0 and standard deviation of 0.5 """
                     
-        mask = np.random.rand(*layer.shape) < mutationRate # tableau de True et False
+        mask = np.random.rand(*layer.shape) < mutationRate # Tableau de True et False
         mutations = np.clip(np.random.normal(0, 0.5, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations)
 
 
+    
+    
     
 # adn = Adn()
 

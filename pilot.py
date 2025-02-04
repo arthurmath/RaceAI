@@ -17,21 +17,19 @@ class Pilot():
         """ Choose a new move based on its state.
         Return the movement choice of the snake (tuple) """
         
-        self.nbMove += 1
-        
-        # il faudrait que les entrées soient entre -1 et 1
+        # Paramètres en entrée du réseau de neurones
         vision = [car.x, car.y, car.speed, car.angle, car.collision, car.nbCollisions, car.progression, *self.previous_moves] # * permet de déplier la liste
-        print(vision)
+        
+        # Il faut que les entrées soient dans [-1, 1] pour converger
         list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 1], [0, 500], [0, 100], [0, 3], [0, 3]]
         for idx, ranges in enumerate(list_ranges):
             vision[idx] = self.scale(vision[idx], *ranges)
-        print(vision)
-    
+            
+        # Actions décidées par le réseau de neurones
         movesValues = self.adn.neural_network_forward(vision) 
         movesValues = movesValues.tolist()[0]
-        print(movesValues, "\n")
 
-        # Chooses the best move (the move with the highest value)
+        # Choix de la meilleure action (celle avec la + grande valeur)
         choice = movesValues.index(max(movesValues))
         
         # TODO à remplacer avec les moves > 80% ?
@@ -44,7 +42,10 @@ class Pilot():
         if len(self.previous_moves) > 2:
             self.previous_moves.pop(0)
             
+        self.nbMove += 1
+            
         return self.actions[choice]
+    
     
     
     def scale(self, x, a, b):

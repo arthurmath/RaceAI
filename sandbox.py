@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import time
 
 
 
@@ -21,8 +22,7 @@ vision = [1, 2, *liste]
 # print(scale(vision[0], *ranges))
 
 
-a = None
-def pri(a=3):
-    print(a)
-    
-pri(a)
+
+print(time.time())
+time.sleep(1)
+print(time.time())

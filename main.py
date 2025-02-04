@@ -2,6 +2,7 @@ import pygame as pg
 import numpy as np
 import sys
 import math
+import time
 from pilot import Pilot
 from adn import Adn
     
@@ -220,12 +221,14 @@ class Score:
 
 
 class Session:
-    def __init__(self, render, player, agent):
+    def __init__(self, train, player, agent):
         pg.init()
         self.clock = pg.time.Clock()
         self.player = player
         self.agent = agent
-        if render:
+        if train:
+            self.startTrain = time.time()
+        else:
             self.screen = pg.display.set_mode((WIDTH, HEIGHT))
             pg.display.set_caption('Race AI')
 
@@ -284,7 +287,7 @@ class Session:
         self.score.draw(self.car)
         pg.display.flip()
 
-    def run(self, render):
+    def run(self, train):
         running = True
         while running:
             for event in pg.event.get():
@@ -292,7 +295,11 @@ class Session:
                     running = False
         
             self.update()
-            if render:
+            
+            if train:
+                if time.time() - self.startTrain > 100:
+                    running = False
+            else:
                 self.draw()
             
     
@@ -327,8 +334,10 @@ if __name__ == '__main__':
     # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     # player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session(render=True, player=2, agent=None)
-    ses.run()
+    train = False
+    
+    ses = Session(train, player=2, agent=None)
+    ses.run(train)
     
     pg.quit()
     sys.exit(0)
