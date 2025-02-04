@@ -11,12 +11,15 @@ class Car:
         self.x, self.y = self.initial_pos
         self.angle = 0
         self.speed = 0
-        self.acceleration = 0.2
-        self.rotation_speed = 5
+        self.acceleration = 0.2 # 0.1 permet de ralentir quand on est bloqué et ne pas marcher sur le bord trop vite
+        self.rotation_speed = 8
         self.max_speed = 10
         
         self.collision = 0
         self.compteur = 0 # pour les collisions
+        
+        self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
+        self.car_mask2 = pg.mask.from_surface(self.car_rotated)
         
         
         
@@ -36,6 +39,18 @@ class Car:
         if keys[pg.K_DOWN]:
             moved = True
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
+            
+
+        # # voiture se déplace sans tourner
+        # if keys[pg.K_LEFT]:
+        #     self.x -= self.acceleration
+        # if keys[pg.K_RIGHT]:
+        #     self.x += self.acceleration
+        # if keys[pg.K_UP]:
+        #     moved = True
+        #     self.y -= self.acceleration
+        # if keys[pg.K_DOWN]:
+        #     self.y += self.acceleration
                 
 
         if not moved: # inertie
@@ -47,9 +62,9 @@ class Car:
         if self.collision != None:
             if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 print("Collision", self.collision, self.compteur)
-                print(self.car_rect, "\n")
+                # print(self.car_rect, "\n")
                 self.speed = - self.speed / 2
-                self.compteur = 10
+                self.compteur = 5
         self.compteur -= 1
             
         rad = math.radians(self.angle)
@@ -61,14 +76,24 @@ class Car:
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
-        
-        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
-        
-        
-        
-        
     
+    # def draw(self):
+    #     self.rotated_car = pg.transform.rotate(self.car_img, self.angle)
+    #     self.car_rect = self.rotated_car.get_rect(center=(self.x + self.car_img.get_width() / 2, 
+    #                                             self.y + self.car_img.get_height() / 2))
+    #     ses.screen.blit(self.rotated_car, self.car_rect.topleft)
+        
+        
+
+        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
+        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
+        
+        # self.car_mask2 = pg.mask.from_surface(self.car_rotated)
+        # self.car_mask_img2 = self.car_mask2.to_surface().convert_alpha()
+        # ses.screen.blit(self.car_mask_img2, self.car_rect)
+
+
+
 
 
 
@@ -82,10 +107,11 @@ class Background:
         self.border_rect = self.border.get_rect()
         self.border_mask = pg.mask.from_surface(self.border)
         self.border_mask_img = show_mask(self.border)
+        self.border_mask_img2 = self.border_mask.to_surface()
         
     def update(self, car):
-        self.car_mask = pg.mask.from_surface(car.car_img)
-        offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
+        self.car_mask = pg.mask.from_surface(car.car_rotated)
+        offset = (int(car.x - self.border_pos[0] - 10), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
         # booleen = self.border_mask.overlap(self.car_mask, offset)
         # car.collision = 0 if booleen == None else 1
         car.collision = self.border_mask.overlap(self.car_mask, offset)
@@ -96,6 +122,7 @@ class Background:
         ses.screen.blit(self.border, self.border_pos)
         
         ses.screen.blit(self.border_mask_img, self.border_pos) # mask
+        #ses.screen.blit(self.border_mask_img2, self.border_pos) # mask
         
         
         
@@ -118,12 +145,12 @@ class Session:
         self.load_images()
         self.generate_objects()
        
-
         
     def load_images(self):
         self.car_img = pg.image.load('images/car.png').convert_alpha()
         img_width, img_height = self.car_img.get_size()
-        self.car_img = pg.transform.scale(self.car_img, (img_width // 9, img_height // 9))
+        b = 10 # scale factor for the track
+        self.car_img = pg.transform.scale(self.car_img, (img_width // b, img_height // b))
         self.car_img = pg.transform.rotate(self.car_img, 270)
         
         a = 1 # scale factor for the track
@@ -181,7 +208,7 @@ class Session:
 if __name__ == '__main__':
     
     def show_mask(img): #(chatgpt)
-        # Créer une surface noire de la taille du masque
+        # Créer une surface blanche de la taille du masque
         mask = pg.mask.from_surface(img)
         mask_surface = pg.Surface(mask.get_size(), flags=pg.SRCALPHA)
         mask_surface.fill((0, 0, 0, 0))  # Transparence
@@ -208,14 +235,18 @@ if __name__ == '__main__':
     
     
     
-# PETIT CIRCUIT
+# PETIT CIRCUIT (a = 10)
 # les collisions sont bonnes dans l'axe verticales mais mauvaises sur l'axe horizontal.
 # On dirait que le masque du circuit a été comprimé horizontalement.
 
 # GRAND CRICUIT 
 # collisions verticales OK mais horizontales la voiture dépasse sur les bords.
 
-# Ca n'est pas une histoire de compression car c'est vrai pour toutes les échelles
+# Ca n'est pas une histoire de compression car le probleme est vrai à toutes les échelles
 
-# Théorie : pour detecter les collisions, le code utiliser le rect de la voiture 
-# mais celui ci reste un rectangle vertical, avec plus de hauteur que de largeur.
+# Théorie : pour detecter les collisions, le code utilise l'image de la voiture 
+# mais elle n'est pas tournée. Effectivement, quand la voiture ne tourne pas, 
+# les collisions sont bonnes. 
+
+# le problème semble changer avec la scale de la voiture
+# ajouter une 2e voiture ? 

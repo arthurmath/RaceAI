@@ -7,19 +7,21 @@ from adn import Adn
     
 class Car:
     def __init__(self, ses): 
-        self.car_img = ses.car_img
         self.initial_pos = 230, 275
         self.x, self.y = self.initial_pos
         self.angle = 0
         self.speed = 0
-        self.acceleration = 0.1 # 0.2
+        self.acceleration = 0.2
         self.rotation_speed = 9
         self.max_speed = 10
+        
+        self.car_img = ses.car_img
+        self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
+        self.car_rect = self.car_rotated.get_rect()
         
         self.collision = 0
         self.compteur = 0 # pour les collisions
         
-
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
                             (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
                             (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
@@ -28,6 +30,7 @@ class Car:
         self.total_distance = 0
         for i in range(len(self.checkpoints) - 1):
             self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
+            
         
         
     def update(self):
@@ -72,7 +75,7 @@ class Car:
         if self.collision != 0:
             if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
                 self.speed = - self.speed / 2
-                self.compteur = 10
+                self.compteur = 5
         self.compteur -= 1
             
         rad = math.radians(self.angle)
@@ -89,7 +92,7 @@ class Car:
             pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
+        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
         
 
     
@@ -134,8 +137,8 @@ class Background:
         self.finish_rect = self.finish.get_rect(topleft=(200, 330)) # on crée un rect pour la ligne d'arrivée
         
     def update(self, car):
-        self.car_mask = pg.mask.from_surface(car.car_img)
-        offset = (int(car.x - self.border_pos[0]), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
+        self.car_mask = pg.mask.from_surface(car.car_rotated)
+        offset = (int(car.x - self.border_pos[0] - 10), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
         booleen = self.border_mask.overlap(self.car_mask, offset)
         car.collision = 0 if booleen == None else 1
         
@@ -162,7 +165,8 @@ class Score:
         self.background = background
         self.car = car
         self.update_high_score()
-        self.font = pg.font.Font(pg.font.match_font('arial'), 20) # police d'écriture
+        self.font = pg.font.Font(pg.font.match_font('arial'), 20)
+        
         
     def update_high_score(self):
         """ Met à jour high_score avec le meilleur temps du fichier """
@@ -175,7 +179,7 @@ class Score:
         
         if self.background.collision_finish(self.car):
             if self.temps_ecoule < self.high_score: # si le temps realisé est meilleur que l'ancien record
-                if self.temps_ecoule > 20: # pour ne pas sauvegarder les marches arrières sur le finish
+                if self.temps_ecoule > 15: # pour ne pas sauvegarder les marches arrières sur le finish
                     self.high_score = self.temps_ecoule 
                     with open("times.txt", "a") as file:
                         file.write(f"{self.high_score:.3f}\n")
@@ -188,8 +192,8 @@ class Score:
     def draw(self, car): 
         # affichage du timer
         text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
-        text_surface = self.font.render(text, True, WHITE)   # création de la surface du texte
-        text_rect = text_surface.get_rect() # récupération du rectangle de la surface du texte
+        text_surface = self.font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect()
         text_rect.topleft = (10, 800)
         ses.screen.blit(text_surface, text_rect)
         
@@ -222,9 +226,6 @@ class Session:
         # self.music()
         self.load_images()
         self.generate_objects()
-       
-        self.editing_checkpoints = True # curseur
-        #self.checkpoints_fin = []
 
         
     def music(self):
@@ -235,7 +236,7 @@ class Session:
     def load_images(self):
         self.car_img = pg.image.load('images/car.png').convert_alpha()
         img_width, img_height = self.car_img.get_size()
-        self.car_img = pg.transform.scale(self.car_img, (img_width // 9, img_height // 9))
+        self.car_img = pg.transform.scale(self.car_img, (img_width // 11, img_height // 11))
         self.car_img = pg.transform.rotate(self.car_img, 270)
         
         a = 1.0 # scale factor for the track
@@ -283,16 +284,6 @@ class Session:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
-                #if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-                     #pos = pg.mouse.get_pos()
-                     #self.checkpoints_fin.append(pos)
-                     #with open("checkpoints", "a") as file:
-                     #    file.write(f"{self.checkpoints_fin}\n")
-                     #print({pos})
-
-
-                self.update()
-                self.draw()
         
             self.update()
             self.draw()
@@ -326,10 +317,10 @@ if __name__ == '__main__':
     FPS = 30 
     
     
-    print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
-    player = int(input("Entrez votre choix (1 ou 2) : "))
+    # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
+    # player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session(player)
+    ses = Session(player=1)
     ses.run()
     
     pg.quit()
@@ -339,7 +330,7 @@ if __name__ == '__main__':
     
     
     
-# refaire collisions avec border 
+
 
 
 
@@ -370,3 +361,15 @@ if __name__ == '__main__':
 
 # for start, end, color in lines:
 #     pg.draw.line(ses.screen, color, start, end, 2)
+
+
+
+
+
+
+    #if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+        #pos = pg.mouse.get_pos()
+        #self.checkpoints_fin.append(pos)
+        #with open("checkpoints", "a") as file:
+        #    file.write(f"{self.checkpoints_fin}\n")
+        #print({pos})
