@@ -220,10 +220,11 @@ class Score:
 
 
 class Session:
-    def __init__(self, render, player):
+    def __init__(self, render, player, agent):
         pg.init()
         self.clock = pg.time.Clock()
         self.player = player
+        self.agent = agent
         if render:
             self.screen = pg.display.set_mode((WIDTH, HEIGHT))
             pg.display.set_caption('Race AI')
@@ -264,7 +265,7 @@ class Session:
         self.car = Car(self)
         self.background = Background(self)
         self.score = Score(self.background, self.car)
-        if self.player == 2:
+        if self.player == 2 and self.agent == None:
             # with open(Path(args.genetic), "rb") as f:
             #     weights, bias = pickle.load(f)
             self.agent = Pilot(Adn())
@@ -326,7 +327,7 @@ if __name__ == '__main__':
     # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     # player = int(input("Entrez votre choix (1 ou 2) : "))
     
-    ses = Session(render=True, player=2)
+    ses = Session(render=True, player=2, agent=None)
     ses.run()
     
     pg.quit()

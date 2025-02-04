@@ -13,6 +13,7 @@ class Adn:
             self.layersSize = cp.deepcopy(layersSize)
         else:
             self.layersSize = [10, 10]
+            # self.layersSize = [rd.randint(10, 15) for i in range(rd.randint(1, 3))]
             
         self.layersSize.insert(0, 9)  # Number of input neurons
         self.layersSize.append(4)  # Number of output neurons
