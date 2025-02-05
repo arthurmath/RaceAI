@@ -1,4 +1,4 @@
-import math
+import numpy as np
 
 
 class Pilot():
@@ -35,13 +35,15 @@ class Pilot():
             if x > 0.7: # arbitraire
                 choices.append(idx) # listes d'entiers dans [1, 4]
 
-        self.previous_moves.append(choices)
+        self.previous_moves.extend(choices)
         while len(self.previous_moves) > 2:
             self.previous_moves.pop(0) # on ne garde que les 2 derniers moves
             
         self.nbMove += len(choices)
+        
+        self.moves = [self.actions[choice] for choice in choices]
             
-        return self.actions[choices]
+        return self.moves
     
     
     
@@ -58,7 +60,7 @@ class Pilot():
             
     def mate(self, other, mutationRate):
         """ Mate with another pilot to create a new pilot """
-        newDna = self.adn.mix(other.dna, mutationRate)
+        newDna = self.adn.mix(other.adn, mutationRate)
         return Pilot(newDna)
     
 

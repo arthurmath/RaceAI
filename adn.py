@@ -15,12 +15,12 @@ class Adn:
         self.layersSize.insert(0, 9)  # Number of input neurons
         self.layersSize.append(4)  # Number of output neurons
         
-        if weights is not None :
+        if weights != None :
             self.weights = cp.deepcopy(weights)
         else:
             self.initialize_rd_weights()
             
-        if biases is not None:
+        if biases != None:
             self.bias = cp.deepcopy(biases)
         else:
             self.initialize_rd_bias()
@@ -59,7 +59,7 @@ class Adn:
 
     # Pour l'entrainement
     
-    def mix(self, other, mutationRate=0.01):
+    def mix(self, other, mutationRate):
         """
         Mix the copy of this DNA with the copy of another one to create a new one.
         other (Dna): The other DNA used for the mixing
@@ -71,9 +71,9 @@ class Adn:
         newDna.mutate(mutationRate)
         return newDna
     
+    
     def crossover(self, dna1, dna2):
         """ Performs a crosover on the layers (weights and biases) """
-        
         res = [ self.cross_layer(dna1[layer], dna2[layer]) for layer in range(len(dna1)) ]
         return res
 
@@ -90,8 +90,9 @@ class Adn:
             layer2[lineCut + 1 :],
             ))
         return res
+    
 
-    def mutate(self, mutationRate=0.01):
+    def mutate(self, mutationRate):
         """ Mutate the DNA """
         
         for layer in self.weights:
@@ -100,7 +101,7 @@ class Adn:
         for layer in self.bias:
             self.mutate_layer(layer, mutationRate)
             
-    def mutate_layer(self, layer, mutationRate=0.01):
+    def mutate_layer(self, layer, mutationRate):
         """ Add a value from a gaussian distribution of mean 0 and standard deviation of 0.5 """
                     
         mask = np.random.rand(*layer.shape) < mutationRate # Tableau de True et False

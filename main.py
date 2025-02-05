@@ -29,10 +29,8 @@ class Car:
                             (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
                             (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
 
-        self.total_distance = 0
-        for i in range(len(self.checkpoints) - 1):
-            self.total_distance += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
-            
+        self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
+
         
         
     def update(self, ses):
@@ -307,7 +305,7 @@ class Session:
             self.update()
             
             if self.train:
-                if time.time() - self.startTrain > 20: # TODO le temps total doit augmenter avec les generations
+                if time.time() - self.startTrain > 1: # TODO le temps total doit augmenter avec les generations (20)
                     running = False
             if self.display:
                 self.draw()

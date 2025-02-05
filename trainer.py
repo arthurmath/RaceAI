@@ -2,6 +2,7 @@ from pilot import Pilot
 from adn import Adn
 from main import Session
 import random as rd
+import numpy as np
 import pickle
 import multiprocessing as mp
 from pathlib import Path
@@ -31,19 +32,19 @@ class GeneticAlgo:
 
     def train(self):
         
-        self.bestFitness = -1
-        self.bestGenFitness = -1
-        self.bestScore = -1
+        self.bestFit = - np.inf
+        self.bestGenFit = - np.inf
+        self.bestScore = - np.inf
         generation = 0
         itEnd = 0
         
-        self.pilots = [Pilot(Adn()) for _ in range(self.nbPilotes)]
+        self.population = [Pilot(Adn()) for _ in range(self.nbPilotes)]
 
         # Create new generations until the stop condition is satisfied
         while itEnd < 50 or generation < self.maxGenerations:
             
             # Evaluation
-            self.evaluate_generation()        
+            self.evaluate_generation_mono()        
             
             # Selection
             self.bests_survives()
@@ -52,13 +53,13 @@ class GeneticAlgo:
             self.change_generation()
             
             
-            if self.bestGenFitness > self.bestFitness:
+            if self.bestGenFit > self.bestFit:
                 itEnd = 0 # S'il y a une amélioration, on restart le compteur
             else:
                 itEnd += 1 # Sinon, le compteur aumgente
             
             
-            print(f"\nGeneration {generation}, average progression: {self.avgGenScore}%, best progression: {self.bestGenScore}%")
+            print(f"\nGeneration {generation}, average progression: {self.avgGenScore:.3f}%, best progression: {self.bestGenScore:.3f}%\n")
             generation += 1
             
         
@@ -67,48 +68,32 @@ class GeneticAlgo:
         self.bestPilotEver = self.bestPilots[-1]
         
         print(f"\nEnd of training, best progression achieved: {self.bestScore}%\n")
-            
-
-            
-    def run_pilot(pilot): # Cette fonction doit peut etre etre définie hors du __main__
-        """ Fonction exécutée dans un processus séparé pour chaque pilote. """
-        
-        ses = Session(train=True, player=2, agent=pilot, display=True)
-        ses.run()
-        
-        fitness = pilot.compute_fitness(ses.car)
-        progression = ses.car.progression
-        
-        return fitness, progression
 
 
 
-    def evaluate_generation(self):
+    def evaluate_generation_mono(self):
         self.fitness = []
         self.scores = []
         
-        # Création d'un pool de processus
-        with mp.Pool(processes=self.nbCPU) as pool:
-            # Calcul de manière asynchrone (lancement de plusieurs processus distribués sur les coeurs)
-            async_result = pool.map_async(self.run_pilot, self.pilots)
+        for idx, pilot in enumerate(self.population): 
             
-            # Attendre la fin de tous les processus
-            async_result.wait()
-            results = async_result.get()
+            ses = Session(train=True, player=2, agent=pilot, display=True)
+            ses.run()
+            
+            self.fitness.append(pilot.compute_fitness(ses.car))
+            self.scores.append(ses.car.progression)
+            
+            print(f"Pilot {idx+1}/{self.nbPilotes}, fitness: {self.fitness[-1]:.3f}, progression: {self.scores[-1]:.3f}%")
         
-        # Récupération des résultats
-        self.fitness, self.scores = map(list, zip(*results))
-            
-        # Update
-        self.bestGenFitness = max(self.fitness)
+        self.bestGenFit = max(self.fitness)
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / self.nbPilotes
         
         if self.bestGenScore > self.bestScore:
             self.bestScore = self.bestGenScore
         
-        if self.bestGenFitness > self.bestFitness:
-            self.bestFitness = self.bestGenFitness
+        if self.bestGenFit > self.bestFit:
+            self.bestFit = self.bestGenFit
       
             
             
@@ -119,6 +104,8 @@ class GeneticAlgo:
         
         population_sorted = [self.population[i] for i in sorted_indices] 
         fitness_sorted = [self.fitness[i] for i in sorted_indices] 
+        
+        print(int(self.nbPilotes * self.survivalProportion), "\n")
         
         self.bestPilots = population_sorted[ int(self.nbPilotes * self.survivalProportion) :] # take the 10% bests pilots
         self.bestFitness = fitness_sorted[ int(self.nbPilotes * self.survivalProportion) :]  # take the 10% bests fitness
@@ -137,16 +124,69 @@ class GeneticAlgo:
                 
         # Update
         self.population = self.new_population
-        self.bestGenFitness = 0
-        self.bestGenScore = 0
         
 
     
     def select_parents(self):
-        """Select two parents with high fitness."""
+        """Select two pilots with high fitness."""
         total_fitness = sum(self.bestFitness)
         ratios = [f / total_fitness for f in self.bestFitness]
         return rd.choices(self.new_population, weights=ratios, k=2) # Return a k-sized list
+
+
+
+
+    # Calcul parallèle ####
+
+    def run_pilot(self, arguments): # Cette fonction doit peut etre etre définie hors du __main__
+        """ Fonction exécutée dans un processus séparé pour chaque pilote. """
+        
+        idx, pilot = arguments
+        
+        ses = Session(train=True, player=2, agent=pilot, display=True)
+        ses.run()
+        
+        fitness = pilot.compute_fitness(ses.car)
+        progression = ses.car.progression
+        
+        return idx, fitness, progression
+    
+    
+    def evaluate_generation(self):
+        
+        arguments = [(idx, pilot) for idx, pilot in enumerate(self.population)]
+        
+        # Création d'un pool de processus
+        with mp.Pool(processes=self.nbCPU) as pool:
+            # Calcul de manière asynchrone (lancement de plusieurs processus distribués sur les coeurs)
+            async_result = pool.map_async(self.run_pilot, arguments)
+            
+            # Attendre la fin de tous les processus
+            async_result.wait()
+            results = async_result.get()
+            
+        # Trier les résultats par index 
+        results.sort(key=lambda x: x[0])
+        
+        # Récupération des résultats (sans index)
+        _, self.fitness, self.scores = map(list, zip(*results))
+        
+        print(self.scores)
+            
+        # Update
+        self.bestGenFit = max(self.fitness)
+        self.bestGenScore = max(self.scores)
+        self.avgGenScore = sum(self.scores) / self.nbPilotes
+        
+        if self.bestGenScore > self.bestScore:
+            self.bestScore = self.bestGenScore
+        
+        if self.bestGenFit > self.bestFit:
+            self.bestFit = self.bestGenFit
+    
+    
+    
+
 
 
 
@@ -155,8 +195,8 @@ class GeneticAlgo:
 
 if __name__ == "__main__":
     
-    population = 100
-    maxGenerations = 50 
+    population = 11 #100
+    maxGenerations = 2 #50 
     mutation_rate = 0.01
     survival_rate = 0.1
     
@@ -176,7 +216,7 @@ if __name__ == "__main__":
     files = listdir(Path("weights"))
     
     with open(Path("weights") / Path(str(algo.bestGenScore) + ".pilot"), "wb") as f: # write binary
-        pickle.dump((algo.bestPilotEver.dna.weights, algo.bestPilotEver.dna.bias), f)
+        pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
         
             
@@ -191,29 +231,3 @@ if __name__ == "__main__":
 
 
 
-
-
-
-# def evaluate_generation(self):
-#     self.fitness = []
-#     self.scores = []
-    
-#     for idx, pilot in enumerate(self.pilots): # multiproccessing 
-        
-#         ses = Session(train=True, player=2, agent=pilot, display=True)
-#         ses.run()
-        
-#         self.fitness.append(pilot.compute_fitness(ses.car))
-#         self.scores.append(ses.car.progression)
-        
-#         print(f"Pilot {idx+1}/{self.nbPilotes}, fitness: {self.fitness[-1]:.3f}, progression: {self.scores[-1]:.3f}%")
-    
-#     self.bestGenFitness = max(self.fitness)
-#     self.bestGenScore = max(self.scores)
-#     self.avgGenScore = sum(self.scores) / self.nbPilotes
-    
-#     if self.bestGenScore > self.bestScore:
-#         self.bestScore = self.bestGenScore
-    
-#     if self.bestGenFitness > self.bestFitness:
-#         self.bestFitness = self.bestGenFitness
