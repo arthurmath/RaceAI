@@ -123,3 +123,57 @@ if __name__ == '__main__':
 #         if mp.parent_process() is not None:
 #             exit(107)
 
+
+
+
+
+
+
+
+import multiprocessing as mp
+
+def process_pilot(args):
+    """
+    Fonction à exécuter dans un processus séparé pour chaque pilote.
+    Elle crée une session, exécute la simulation, et renvoie l'index du pilote,
+    sa fitness et sa progression.
+    
+    Args:
+        args (tuple): (idx, pilot, display)
+    
+    Returns:
+        tuple: (idx, fitness, progression)
+    """
+    idx, pilot, display = args
+    # Création et exécution de la session
+    ses = Session(train=True, player=2, agent=pilot, display=display)
+    ses.run()
+    
+    # Calcul de la fitness et récupération de la progression
+    fitness = pilot.compute_fitness(ses.car)
+    progression = ses.car.progression
+    
+    return idx, fitness, progression
+
+if __name__ == "__main__":
+    # Préparez la liste des arguments à passer à chaque processus.
+    # Par exemple, ici on garde display=True pour tous, à ajuster si nécessaire.
+    tasks = [(idx, pilot, True) for idx, pilot in enumerate(self.pilots)]
+    
+    # Utilisation d'un pool de processus
+    with mp.Pool(processes=mp.cpu_count()) as pool:
+        # Lancer de manière asynchrone avec map_async
+        async_result = pool.map_async(process_pilot, tasks)
+        
+        # Attendre la fin de tous les traitements
+        async_result.wait()
+        results = async_result.get()
+    
+    # Trier les résultats par index (optionnel, si l'ordre est important)
+    results.sort(key=lambda x: x[0])
+    
+    # Récupération des résultats et affichage
+    for idx, fitness, progression in results:
+        self.fitness.append(fitness)
+        self.scores.append(progression)
+        print(f"Pilot {idx+1}/{self.nbPilotes}, fitness: {fitness:.3f}, progression: {progression:.3f}%")

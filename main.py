@@ -224,23 +224,24 @@ class Score:
 
 class Session:        
     def __init__(self, train, player, agent, display):
-        pg.init()
-        self.clock = pg.time.Clock()
         self.train = train
         self.player = player
         self.agent = agent
         self.display = display
+        
         self.width = 1200
         self.height = 900
         self.fps = 30
         
+        pg.init()
+        self.clock = pg.time.Clock()
+        self.screen = pg.display.set_mode((self.width, self.height))
+        pg.display.set_caption('Race AI')
+        
         if train:
             self.startTrain = time.time()
             self.fps = 70
-        if display:
-            self.screen = pg.display.set_mode((self.width, self.height))
-            pg.display.set_caption('Race AI')
-
+            
         # self.music()
         self.load_images()
         self.generate_objects()

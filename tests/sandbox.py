@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import time
+import multiprocessing as mp
 
 
 
@@ -9,12 +10,39 @@ vision = [1, 2, *liste]
 # print(vision)
 
 
+# print(time.time())
+# time.sleep(1)
+# print(time.time())
 
 
 
-print(time.time())
-time.sleep(1)
-print(time.time())
+def run_pilot(pilot):
+    return pilot, pilot + 1
+
+
+
+if __name__ == '__main__':
+    
+    fitness = []
+    scores = []
+
+    pilots = list(range(10))
+
+    # Utilisation d'un pool de processus
+    with mp.Pool(processes=mp.cpu_count()) as pool:
+        # Calcul de manière asynchrone (plusieurs processus distribués sur les coeurs)
+        async_result = pool.map_async(run_pilot, pilots)
+        
+        # Attendre la fin de tous les traitements
+        async_result.wait()
+        results = async_result.get()
+        
+    print(results)
+    
+    fitness, scores = map(list, zip(*results))
+        
+    print(fitness)
+    print(scores)
 
 
 
