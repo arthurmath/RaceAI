@@ -27,24 +27,21 @@ class Pilot():
             
         # Actions décidées par le réseau de neurones
         movesValues = self.adn.neural_network_forward(vision) 
-        movesValues = movesValues.tolist()[0]
-
-        # Choix de la meilleure action (celle avec la + grande valeur)
-        choice = movesValues.index(max(movesValues))
+        movesValues = movesValues.tolist()[0]  # listes de flottants dans [0, 1]
         
-        # TODO à remplacer avec les moves > 80% ?
-        # moves = []
-        # for x in movesValues:
-        #     if x > 0.8:
-        #         moves.append(self.actions[movesValues.index(x)])
+        # Choix des meilleures actions (celles avec une valeur > 0.7)
+        choices = []
+        for idx, x in enumerate(movesValues):
+            if x > 0.7: # arbitraire
+                choices.append(idx) # listes d'entiers dans [1, 4]
 
-        self.previous_moves.append(choice)
-        if len(self.previous_moves) > 2:
-            self.previous_moves.pop(0)
+        self.previous_moves.append(choices)
+        while len(self.previous_moves) > 2:
+            self.previous_moves.pop(0) # on ne garde que les 2 derniers moves
             
-        self.nbMove += 1
+        self.nbMove += len(choices)
             
-        return self.actions[choice]
+        return self.actions[choices]
     
     
     
@@ -54,14 +51,12 @@ class Pilot():
         return 2 * (x - a) / (b - a) - 1
 
 
-
     def compute_fitness(self, car):
-        
         self.fitness = car.progression ** 2 / car.nbCollisions if car.nbCollisions else car.progression ** 2
         return self.fitness
     
             
-    def mate(self, other, mutationRate=0.01):
+    def mate(self, other, mutationRate):
         """ Mate with another pilot to create a new pilot """
         newDna = self.adn.mix(other.dna, mutationRate)
         return Pilot(newDna)
@@ -69,3 +64,6 @@ class Pilot():
 
     def reset_state(self):
         self.nbMove = 0
+
+
+

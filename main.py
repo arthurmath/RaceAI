@@ -232,9 +232,11 @@ class Session:
         self.display = display
         self.width = 1200
         self.height = 900
+        self.fps = 30
         
         if train:
             self.startTrain = time.time()
+            self.fps = 70
         if display:
             self.screen = pg.display.set_mode((self.width, self.height))
             pg.display.set_caption('Race AI')
@@ -286,7 +288,7 @@ class Session:
         self.car.update(self)
         self.background.update(self.car)
         self.score.update(self.car)
-        self.clock.tick(30) # FPS
+        self.clock.tick(self.fps)
     
     def draw(self):
         self.background.draw(self)
@@ -304,7 +306,7 @@ class Session:
             self.update()
             
             if self.train:
-                if time.time() - self.startTrain > 30:
+                if time.time() - self.startTrain > 20: # TODO le temps total doit augmenter avec les generations
                     running = False
             if self.display:
                 self.draw()
@@ -399,3 +401,8 @@ if __name__ == '__main__':
         #with open("checkpoints", "a") as file:
         #    file.write(f"{self.checkpoints_fin}\n")
         #print({pos})
+        
+        
+        
+        
+        

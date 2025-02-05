@@ -9,9 +9,6 @@ from os import listdir
 
 
 class GeneticAlgo:
-    """
-    Class whose purpose is to make the snakes plays and create new generations of snakes.
-    """
 
     def __init__(self, nbPilotes, mutation_rate, survival_rate, maxGenerations):
         """
@@ -27,7 +24,6 @@ class GeneticAlgo:
         self.maxGenerations = maxGenerations
         
     
-
 
     def train(self):
         
@@ -59,11 +55,8 @@ class GeneticAlgo:
                 itEnd += 1 # Sinon, le compteur aumgente
             
             
-            print(f"Generation {generation}, avg score: {self.avgGenScore}, best score: {self.bestGenScore}")
+            print(f"\nGeneration {generation}, avg score: {self.avgGenScore}, best score: {self.bestGenScore}\n")
             generation += 1
-      
-            
-            
             
         
         self.evaluate_generation()
@@ -79,7 +72,7 @@ class GeneticAlgo:
         self.fitness = []
         self.scores = []
         
-        for pilot in self.pilots: # multiproccessing TODO
+        for idx, pilot in enumerate(self.pilots): # multiproccessing TODO
             
             ses = Session(train=True, player=2, agent=pilot, display=True)
             ses.run()
@@ -87,6 +80,7 @@ class GeneticAlgo:
             self.fitness.append(pilot.compute_fitness(ses.car))
             self.scores.append(ses.car.progression)
             
+            print(f"Pilot {idx+1}/{self.nbPilotes}, fitness: {self.fitness[-1]:.3f}, progression: {self.scores[-1]:.3f}%")
             
             
         self.bestGenFitness = max(self.fitness)
@@ -109,7 +103,7 @@ class GeneticAlgo:
         fitness_sorted = [self.fitness[i] for i in sorted_indices] 
         
         self.bestPilots = population_sorted[ int(self.nbPilotes * self.survivalProportion) :] # take the 10% bests pilots
-        self.bestFitness = fitness_sorted[ int(self.nbPilotes * self.survivalProportion) :] # take the 10% bests fitness
+        self.bestFitness = fitness_sorted[ int(self.nbPilotes * self.survivalProportion) :]  # take the 10% bests fitness
                 
                 
                 
@@ -139,29 +133,14 @@ class GeneticAlgo:
 
 
 
-    
-    def show_best_snake(self):
-        """
-        Show the best snake of the current generation playing the game again.
-        The snake replays in a new environment (new spawn position for the snake and food)
-        """
-        self.bestSnake.reset_state()
-        self.ses.start_run()
-
-        while self.ses.is_alive():
-            self.ses.next_tick(self.bestSnake)
-
-
-
-
 
 
 if __name__ == "__main__":
     
-    population = 1000
+    population = 100
     maxGenerations = 50 
     mutation_rate = 0.01
-    survival_rate = 0.12
+    survival_rate = 0.1
     
     
     algo = GeneticAlgo(population, mutation_rate, survival_rate, maxGenerations)
@@ -173,7 +152,7 @@ if __name__ == "__main__":
     # Save the weights and biases of the snakes for the new game scores
     files = listdir(Path("weights"))
     
-    with open(Path("weights") / Path(str(algo.bestGenScore) + ".weights"), "wb") as f: # write binary
+    with open(Path("weights") / Path(str(algo.bestGenScore) + ".pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.dna.weights, algo.bestPilotEver.dna.bias), f)
         
         
