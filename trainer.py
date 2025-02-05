@@ -1,10 +1,9 @@
-from pilot import Pilot
-from adn import Adn
-from main import Session
 import random as rd
 import numpy as np
 import pickle
 import multiprocessing as mp
+from pilot import Pilot, Adn
+from main import Session
 from pathlib import Path
 from os import listdir
 
@@ -41,7 +40,7 @@ class GeneticAlgo:
         self.population = [Pilot(Adn()) for _ in range(self.nbPilotes)]
 
         # Create new generations until the stop condition is satisfied
-        while itEnd < 50 or generation < self.maxGenerations:
+        while itEnd < 50 and generation < self.maxGenerations:
             
             # Evaluation
             self.evaluate_generation_mono()        
@@ -67,7 +66,7 @@ class GeneticAlgo:
         self.bests_survives()
         self.bestPilotEver = self.bestPilots[-1]
         
-        print(f"\nEnd of training, best progression achieved: {self.bestScore}%\n")
+        print(f"\nEnd of training, best progression achieved: {self.bestScore:.3f}%\n")
 
 
 
@@ -77,7 +76,7 @@ class GeneticAlgo:
         
         for idx, pilot in enumerate(self.population): 
             
-            ses = Session(train=True, player=2, agent=pilot, display=True)
+            ses = Session(train=True, agent=pilot, display=False)
             ses.run()
             
             self.fitness.append(pilot.compute_fitness(ses.car))
@@ -95,8 +94,6 @@ class GeneticAlgo:
         if self.bestGenFit > self.bestFit:
             self.bestFit = self.bestGenFit
       
-            
-            
             
     def bests_survives(self):
         
@@ -125,13 +122,13 @@ class GeneticAlgo:
         # Update
         self.population = self.new_population
         
-
     
     def select_parents(self):
         """Select two pilots with high fitness."""
         total_fitness = sum(self.bestFitness)
         ratios = [f / total_fitness for f in self.bestFitness]
         return rd.choices(self.new_population, weights=ratios, k=2) # Return a k-sized list
+
 
 
 
@@ -143,7 +140,7 @@ class GeneticAlgo:
         
         idx, pilot = arguments
         
-        ses = Session(train=True, player=2, agent=pilot, display=True)
+        ses = Session(train=True, agent=pilot, display=False)
         ses.run()
         
         fitness = pilot.compute_fitness(ses.car)
@@ -195,8 +192,8 @@ class GeneticAlgo:
 
 if __name__ == "__main__":
     
-    population = 11 #100
-    maxGenerations = 2 #50 
+    population = 10 #100
+    maxGenerations = 10 #50 
     mutation_rate = 0.01
     survival_rate = 0.1
     
@@ -215,16 +212,13 @@ if __name__ == "__main__":
     # Save the weights and biases of the snakes for the new game scores
     files = listdir(Path("weights"))
     
-    with open(Path("weights") / Path(str(algo.bestGenScore) + ".pilot"), "wb") as f: # write binary
+    with open(Path("weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
         
             
             
 
-
-
-# TODO enregistrement des weights et nouveau pilote a partir de ces weigths
 
 
 

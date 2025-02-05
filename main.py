@@ -3,8 +3,12 @@ import numpy as np
 import sys
 import math
 import time
-from pilot import Pilot
-from adn import Adn
+from pilot import Pilot, Adn
+from pathlib import Path
+import pickle
+
+
+
     
 class Car:
     def __init__(self, ses): 
@@ -40,7 +44,7 @@ class Car:
         
         moves = []
         
-        if ses.player == 1: 
+        if ses.agent == None: 
             keys = pg.key.get_pressed()
             if keys[pg.K_LEFT]:
                 moves.append('L')
@@ -155,8 +159,8 @@ class Background:
         
         
     def collision_finish(self, car):
-        car_rect = car.car_rect # récupérer le rectangle de la voiture
-        return car_rect.colliderect(self.finish_rect) # detecte la collision
+        car_rect = car.car_rect
+        return car_rect.colliderect(self.finish_rect)
         
         
         
@@ -221,9 +225,8 @@ class Score:
 
 
 class Session:        
-    def __init__(self, train, player, agent, display):
+    def __init__(self, train, agent, display):
         self.train = train
-        self.player = player
         self.agent = agent
         self.display = display
         
@@ -238,7 +241,7 @@ class Session:
         
         if train:
             self.startTrain = time.time()
-            self.fps = 70
+            self.fps = 70 # faster training
             
         # self.music()
         self.load_images()
@@ -256,14 +259,13 @@ class Session:
         self.car_img = pg.transform.scale(self.car_img, (img_width // 11, img_height // 11))
         self.car_img = pg.transform.rotate(self.car_img, 270)
         
-        a = 1.0 # scale factor for the track
         self.track_img = pg.image.load('media/track.png').convert_alpha()
         img_width, img_height = self.track_img.get_size()
-        self.track_img = pg.transform.scale(self.track_img, (img_width // a, img_height // a))
+        self.track_img = pg.transform.scale(self.track_img, (img_width, img_height))
         
         self.border_img = pg.image.load('media/track-border.png').convert_alpha()
         img_width, img_height = self.border_img.get_size()
-        self.border_img = pg.transform.scale(self.border_img, (img_width // a, img_height // a))
+        self.border_img = pg.transform.scale(self.border_img, (img_width, img_height))
         
         self.background_img = pg.image.load('media/background.jpg').convert()
         self.background_img = pg.transform.scale(self.background_img, (self.width, self.height))
@@ -276,10 +278,15 @@ class Session:
         self.car = Car(self)
         self.background = Background(self)
         self.score = Score(self.background, self.car)
-        if self.player == 2 and self.agent == None:
-            # with open(Path(args.genetic), "rb") as f:
-            #     weights, bias = pickle.load(f)
-            self.agent = Pilot(Adn())
+        
+        if self.train == False and self.agent != None: # On charge les poids du réseau depuis le fichier
+            with open(Path("weights") / Path(self.agent), "rb") as f:
+                weights, bias = pickle.load(f)
+                self.agent = Pilot(Adn(weights, bias))
+            self.fps = 70 # ?
+                
+        # else: # On crée un niveau réseau aléatoire
+        #     self.agent = Pilot(Adn())
             
         
         
@@ -305,7 +312,7 @@ class Session:
             self.update()
             
             if self.train:
-                if time.time() - self.startTrain > 1: # TODO le temps total doit augmenter avec les generations (20)
+                if time.time() - self.startTrain > 2: # TODO le temps total doit augmenter avec les generations (20)
                     running = False
             if self.display:
                 self.draw()
@@ -338,16 +345,21 @@ if __name__ == '__main__':
     # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
     # player = int(input("Entrez votre choix (1 ou 2) : "))
     
+    player = 2
+    
+    if player == 1:
+        agent = None
+    else:
+        agent = "4.376.pilot"
+    
     train = False
-    player = 1
-    agent = None
     display = True
     
-    ses = Session(train, player, agent, display)
+    ses = Session(train, agent, display)
     ses.run()
     
     pg.quit()
-    sys.exit(0)
+    sys.exit()
     
     
     
