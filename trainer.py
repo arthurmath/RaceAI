@@ -23,10 +23,7 @@ class GeneticAlgo:
         self.maxGenerations = maxGenerations
         self.mutationRate = mutation_rate
         self.survivalProportion = survival_rate
-        
-        self.nbCPU = mp.cpu_count()
-        print("Nombre de CPU :", self.nbCPU)
-        
+               
     
 
     def train(self):
@@ -34,16 +31,16 @@ class GeneticAlgo:
         self.bestFit = - np.inf
         self.bestGenFit = - np.inf
         self.bestScore = - np.inf
-        generation = 0
+        self.generation = 0
         itEnd = 0
         
         self.population = [Pilot(Adn()) for _ in range(self.nbPilotes)]
 
         # Create new generations until the stop condition is satisfied
-        while itEnd < 50 and generation < self.maxGenerations:
+        while itEnd < 50 and self.generation < self.maxGenerations:
             
             # Evaluation
-            self.evaluate_generation_mono()        
+            self.evaluate_generation_multi()        
             
             # Selection
             self.bests_survives()
@@ -57,9 +54,8 @@ class GeneticAlgo:
             else:
                 itEnd += 1 # Sinon, le compteur aumgente
             
-            
-            print(f"\nGeneration {generation}, average progression: {self.avgGenScore:.3f}%, best progression: {self.bestGenScore:.3f}%\n")
-            generation += 1
+            print(f"\nGeneration {self.generation}, average progression: {self.avgGenScore:.3f}%, best progression: {self.bestGenScore:.3f}%\n")
+            self.generation += 1
             
         
         self.evaluate_generation()
@@ -70,13 +66,13 @@ class GeneticAlgo:
 
 
 
-    def evaluate_generation_mono(self):
+    def evaluate_generation(self):
         self.fitness = []
         self.scores = []
         
         for idx, pilot in enumerate(self.population): 
             
-            ses = Session(train=True, agent=pilot, display=False)
+            ses = Session(train=True, agent=pilot, display=True, training_time=self.generation)
             ses.run()
             
             self.fitness.append(pilot.compute_fitness(ses.car))
@@ -133,43 +129,21 @@ class GeneticAlgo:
 
 
 
-    # Calcul parallèle ####
-
-    def run_pilot(self, arguments): # Cette fonction doit peut etre etre définie hors du __main__
-        """ Fonction exécutée dans un processus séparé pour chaque pilote. """
-        
-        idx, pilot = arguments
-        
-        ses = Session(train=True, agent=pilot, display=False)
-        ses.run()
-        
-        fitness = pilot.compute_fitness(ses.car)
-        progression = ses.car.progression
-        
-        return idx, fitness, progression
+    #### Calcul parallèle ####    
     
-    
-    def evaluate_generation(self):
+    def evaluate_generation_multi(self):
+        cores = mp.cpu_count() # 8
         
-        arguments = [(idx, pilot) for idx, pilot in enumerate(self.population)]
-        
-        # Création d'un pool de processus
-        with mp.Pool(processes=self.nbCPU) as pool:
+        # Création d'un pool de processus (autant de processus que de coeurs)
+        with mp.Pool(processes=cores) as pool:
             # Calcul de manière asynchrone (lancement de plusieurs processus distribués sur les coeurs)
-            async_result = pool.map_async(self.run_pilot, arguments)
-            
-            # Attendre la fin de tous les processus
-            async_result.wait()
+            async_result = pool.map_async(self.run_pilot, self.population)
             results = async_result.get()
-            
-        # Trier les résultats par index 
-        results.sort(key=lambda x: x[0])
         
-        # Récupération des résultats (sans index)
-        _, self.fitness, self.scores = map(list, zip(*results))
         
-        print(self.scores)
-            
+        # Récupération des listes de résultats 
+        self.fitness, self.scores = map(list, zip(*results))
+        
         # Update
         self.bestGenFit = max(self.fitness)
         self.bestGenScore = max(self.scores)
@@ -181,6 +155,17 @@ class GeneticAlgo:
         if self.bestGenFit > self.bestFit:
             self.bestFit = self.bestGenFit
     
+
+    def run_pilot(self, pilot): 
+        """ Fonction exécutée dans un processus séparé pour chaque pilote. """
+        
+        ses = Session(train=True, agent=pilot, display=False, training_time=self.generation)
+        ses.run()
+        
+        fitness = pilot.compute_fitness(ses.car)
+        progression = ses.car.progression
+        
+        return fitness, progression
     
     
 
@@ -201,6 +186,7 @@ if __name__ == "__main__":
     # nombre de layers NN (adn)
     # parametre 0.7 pour la sélection des neurones (pilot)
     # temps d'entrainement de chaque pilote (main)
+    # fps acceleration training
     
     
     algo = GeneticAlgo(population, maxGenerations, mutation_rate, survival_rate)
@@ -224,4 +210,4 @@ if __name__ == "__main__":
 
 
 
-
+# comment empecher pyagem de print les truc dans lancement dans le terminal ?

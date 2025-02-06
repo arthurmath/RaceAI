@@ -1,12 +1,15 @@
 import numpy as np
 import copy as cp
 import random as rd
+
+np.random.seed(42)
 rd.seed(42)
 
 
 
+
 class Pilot():
-    """ Represents the AI that plays RaceAI """
+    """ Creates the AI Pilot that plays RaceAI """
 
     def __init__(self, adn): 
         self.adn = adn

@@ -1,5 +1,4 @@
 import pygame as pg
-import numpy as np
 import sys
 import math
 import time
@@ -225,10 +224,11 @@ class Score:
 
 
 class Session:        
-    def __init__(self, train, agent, display):
+    def __init__(self, train, agent, display, training_time):
         self.train = train
         self.agent = agent
         self.display = display
+        self.training_time = training_time
         
         self.width = 1200
         self.height = 900
@@ -240,7 +240,7 @@ class Session:
         pg.display.set_caption('Race AI')
         
         if train:
-            self.startTrain = time.time()
+            self.start_train = time.time()
             self.fps = 70 # faster training
             
         # self.music()
@@ -279,14 +279,11 @@ class Session:
         self.background = Background(self)
         self.score = Score(self.background, self.car)
         
-        if self.train == False and self.agent != None: # On charge les poids du réseau depuis le fichier
+        if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
             with open(Path("weights") / Path(self.agent), "rb") as f:
                 weights, bias = pickle.load(f)
                 self.agent = Pilot(Adn(weights, bias))
-            self.fps = 70 # ?
-                
-        # else: # On crée un niveau réseau aléatoire
-        #     self.agent = Pilot(Adn())
+            self.fps = 70 
             
         
         
@@ -312,7 +309,7 @@ class Session:
             self.update()
             
             if self.train:
-                if time.time() - self.startTrain > 2: # TODO le temps total doit augmenter avec les generations (20)
+                if time.time() - self.start_train > self.training_time: # temps d'entrainement dépassé
                     running = False
             if self.display:
                 self.draw()
@@ -342,8 +339,8 @@ if __name__ == '__main__':
 
     
     
-    # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
-    # player = int(input("Entrez votre choix (1 ou 2) : "))
+    print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
+    player = int(input("Entrez votre choix (1 ou 2) : "))
     
     player = 2
     
@@ -354,8 +351,9 @@ if __name__ == '__main__':
     
     train = False
     display = True
+    training_time = None
     
-    ses = Session(train, agent, display)
+    ses = Session(train, agent, display, training_time)
     ses.run()
     
     pg.quit()
