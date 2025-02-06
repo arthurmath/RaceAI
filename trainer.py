@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import multiprocessing as mp
 from pilot import Pilot, Adn
-from main import Session
+from game import Session
 from pathlib import Path
 from os import listdir
 
