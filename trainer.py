@@ -210,4 +210,5 @@ if __name__ == "__main__":
 
 
 
-# comment empecher pyagem de print les truc dans lancement dans le terminal ?
+# comment empecher pygame de print les truc de lancement dans le terminal ? voir sandbox
+# Faire un callback pour obtenir toutes les progressions et loss pdt l'entrainement.

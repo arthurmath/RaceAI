@@ -16,33 +16,19 @@ vision = [1, 2, *liste]
 
 
 
-def run_pilot(pilot):
-    return pilot, pilot + 1
 
+def my_agent(x):
+    return x*x
 
+import inspect
+import os
 
-if __name__ == '__main__':
-    
-    fitness = []
-    scores = []
+def write_agent_to_file(function, file):
+    with open(file, "a" if os.path.exists(file) else "w") as f:
+        f.write(inspect.getsource(function))
+        print(function, "written to", file)
 
-    pilots = list(range(10))
-
-    # Utilisation d'un pool de processus
-    with mp.Pool(processes=mp.cpu_count()) as pool:
-        # Calcul de manière asynchrone (plusieurs processus distribués sur les coeurs)
-        async_result = pool.map_async(run_pilot, pilots)
-        
-        # Attendre la fin de tous les traitements
-        async_result.wait()
-        results = async_result.get()
-        
-    print(results)
-    
-    fitness, scores = map(list, zip(*results))
-        
-    print(fitness)
-    print(scores)
+write_agent_to_file(my_agent, "submission.py")
 
 
 

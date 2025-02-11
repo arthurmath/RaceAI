@@ -20,41 +20,43 @@ if __name__ == '__main__':
     background = pg.image.load("media/start.png")  # Remplace avec ton image
     background = pg.transform.scale_by(background, 0.6)
     
-    title = pg.font.SysFont('forte', 60)
+    # print(pg.font.get_fonts())
+    title = pg.font.SysFont('forte', 70) # Arial Black, Futura
     text = pg.font.SysFont('forte', 30)
 
     title_text = title.render('Welcome on Race AI!', True, WHITE)
-    start_text = text.render('Press any key to start', True, WHITE)
+    start_text = text.render('Choose your mode:', True, WHITE)
 
-    
-
+    x = 150
     # Définition des zones cliquables (x, y, largeur, hauteur)
     zones = {
-        "Human": pg.Rect(150, 200, 200, 50),
-        "AI": pg.Rect(150, 300, 200, 50),
-        "Train": pg.Rect(150, 400, 200, 50),
-        "Quit": pg.Rect(150, 500, 200, 50)
+        "Human": pg.Rect(100, 200+x, 200, 50),
+        "AI": pg.Rect(100, 300+x, 200, 50),
+        "Train": pg.Rect(100, 400+x, 200, 50),
+        "Quit": pg.Rect(100, 500+x, 200, 50)
         }
+    
 
-
+    screen.blit(background, (0, -30))
+    screen.blit(title_text, (WIDTH/2-270, HEIGHT/2-320))
+    screen.blit(start_text, (WIDTH/2-550, HEIGHT/2 - 180))
+    
+    # Tracer les rectangles (pour visualiser les boutons)
+    for zone in zones.values():
+        pg.draw.rect(screen, (0, 0, 255), zone, 2) 
+    
+    pg.display.flip()
+    
+    
 
     running = True
-
     while running:
-        screen.blit(background, (0, -30))
-        screen.blit(title_text, (WIDTH/2-250, HEIGHT/2-320))
-        screen.blit(start_text, (WIDTH/2-100, HEIGHT/2 + 180))
-        
-        # Dessiner les zones (pour visualiser les boutons)
-        for zone in zones.values():
-            pg.draw.rect(screen, (0, 0, 255), zone, 2)  # Contour rouge
-        
-        pg.display.flip()
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
-            elif event.type == pg.MOUSEBUTTONDOWN:
+                
+            if event.type == pg.MOUSEBUTTONDOWN:
                 for key, zone in zones.items():
                     if zone.collidepoint(event.pos):
                         
@@ -123,20 +125,6 @@ if __name__ == '__main__':
 
 # Play game 
 # Launch AI player
-# Train AI Genetic
-# Quit OU Train AI Reinforcement
+# Train Genetic
+# Quit OU Train Reinforcement
 
-
-
-
-
-
-
-    title = pg.font.SysFont('forte', 60)
-    text = pg.font.SysFont('forte', 30)
-
-    title_text = title.render('Welcome on Flappy Bird!', True, WHITE)
-    start_text = text.render('Press any key to start', True, WHITE)
-
-    screen.blit(title_text, (WIDTH/2-250, HEIGHT/2-80))
-    screen.blit(start_text, (WIDTH/2-100, HEIGHT/2 + 180))

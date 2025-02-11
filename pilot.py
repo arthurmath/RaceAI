@@ -26,6 +26,7 @@ class Pilot():
         
         # Paramètres en entrée du réseau de neurones
         vision = [car.x, car.y, car.speed, car.angle, car.collision, car.nbCollisions, car.progression, *self.previous_moves] # * permet de déplier la liste
+        ### enlever nbCollisions (et collision ?)
         
         # Il faut que les entrées soient dans [-1, 1] pour converger
         list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 1], [0, 500], [0, 100], [0, 3], [0, 3]]
