@@ -98,7 +98,7 @@ class GeneticAlgo:
         population_sorted = [self.population[i] for i in sorted_indices] 
         fitness_sorted = [self.fitness[i] for i in sorted_indices] 
         
-        print(int(self.nbPilotes * self.survivalProportion), "\n")
+        # print(int(self.nbPilotes * self.survivalProportion), "\n")
         
         self.bestPilots = population_sorted[ int(self.nbPilotes * self.survivalProportion) :] # take the 10% bests pilots
         self.bestFitness = fitness_sorted[ int(self.nbPilotes * self.survivalProportion) :]  # take the 10% bests fitness
@@ -115,7 +115,6 @@ class GeneticAlgo:
             baby = parent1.mate(parent2, self.mutationRate)
             self.new_population.append(baby)
                 
-        # Update
         self.population = self.new_population
         
     
@@ -209,6 +208,4 @@ if __name__ == "__main__":
 
 
 
-
-# comment empecher pygame de print les truc de lancement dans le terminal ? voir sandbox
 # Faire un callback pour obtenir toutes les progressions et loss pdt l'entrainement.

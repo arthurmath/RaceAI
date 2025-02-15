@@ -1,5 +1,6 @@
 import pygame as pg
 import sys
+import os
 import math
 import time
 from pilot import Pilot, Adn
@@ -234,6 +235,12 @@ class Session:
         self.height = 900
         self.fps = 30
         
+        # Hide pygame prints
+        # os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+        f = open("/dev/null", "w")
+        os.dup2(f.fileno(), 2)
+        f.close()
+                
         pg.init()
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((self.width, self.height))

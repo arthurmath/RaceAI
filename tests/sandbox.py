@@ -5,41 +5,54 @@ import multiprocessing as mp
 
 
 
-liste = [3, 4]
-vision = [1, 2, *liste]
-# print(vision)
+
+# def my_agent(x):
+#     return x*x
+
+# import inspect
+# import os
+
+# def write_agent_to_file(function, file):
+#     """ copie le code de fonction dans le file """
+#     with open(file, "a" if os.path.exists(file) else "w") as f:
+#         f.write(inspect.getsource(function))
+#         print(function, "written to", file)
+
+# write_agent_to_file(my_agent, "submission.py")
 
 
-# print(time.time())
-# time.sleep(1)
-# print(time.time())
 
 
 
 
-def my_agent(x):
-    return x*x
 
-import inspect
+
 import os
+import sys
 
-def write_agent_to_file(function, file):
-    with open(file, "a" if os.path.exists(file) else "w") as f:
-        f.write(inspect.getsource(function))
-        print(function, "written to", file)
+# # Rediriger la sortie standard et les erreurs pour cacher les logs pygame/SDL
+# sys.stdout = open(os.devnull, "w")
+# sys.stderr = open(os.devnull, "w")
 
-write_agent_to_file(my_agent, "submission.py")
+import pygame
+
+import os
+os.environ["PYGAME_HIDE_PROMPT"] = "1"
+f = open("/dev/null", "w")
+os.dup2(f.fileno(), 2)
+f.close()
+
+screen = pygame.display.set_mode((700, 200))
+
+# # Rétablir les sorties après l'import de pygame
+# sys.stdout = sys.__stdout__
+# sys.stderr = sys.__stderr__
 
 
 
 
 
-
-
-
-
-
-
+# same as 2> /dev/null in the shell
 
 
 
