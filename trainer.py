@@ -7,8 +7,9 @@ from pilot import Pilot, Adn
 from game import Session
 from pathlib import Path
 from os import listdir
-
-
+import os
+#if os.name == 'nt':  # Si le système est Windows
+ #   os.devnull = 'NUL'
 
 
 class GeneticAlgo:
@@ -61,7 +62,7 @@ class GeneticAlgo:
             self.generation += 1
             
         
-        self.evaluate_generation()
+        self.evaluate_generation_multi() # Evaluate the last generation
         self.bests_survives()
         self.bestPilotEver = self.bestPilots[-1]
         
@@ -110,7 +111,7 @@ class GeneticAlgo:
                 
                 
     def change_generation(self):
-        """ Creates a new generation of snakes. """
+        """ Creates a new generation of pilot. """
         
         self.new_population = self.bestPilots # 10% best pilots
         
@@ -137,13 +138,13 @@ class GeneticAlgo:
     
     def evaluate_generation_multi(self):
         cores = mp.cpu_count() # 8
-        
+
         # Création d'un pool de processus (autant de processus que de coeurs)
         with mp.Pool(processes=cores) as pool:
             # Calcul de manière asynchrone (lancement de plusieurs processus distribués sur les coeurs)
             async_result = pool.map_async(self.run_pilot, self.population)
             results = async_result.get()
-        
+
         
         # Récupération des listes de résultats 
         self.fitness, self.scores = map(list, zip(*results))
@@ -164,7 +165,7 @@ class GeneticAlgo:
     def run_pilot(self, pilot): 
         """ Fonction exécutée dans un processus séparé pour chaque pilote. """
         
-        ses = Session(train=True, agent=pilot, display=False, training_time=self.generation)
+        ses = Session(train=True, agent=pilot, display=True, training_time=self.generation)
         ses.run()
         
         fitness = pilot.compute_fitness(ses.car)
@@ -183,7 +184,7 @@ class GeneticAlgo:
 if __name__ == "__main__":
     
     population = 100
-    maxGenerations = 50 
+    maxGenerations = 50
     mutation_rate = 0.02
     survival_rate = 0.1
     

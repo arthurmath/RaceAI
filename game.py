@@ -11,6 +11,7 @@ import library as lib
 
 
 
+
     
 class Car:
     def __init__(self, ses): 
@@ -378,10 +379,13 @@ class Session:
         self.fps = 30
         
         # Hide pygame prints
-        # os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-        f = open("/dev/null", "w")
-        os.dup2(f.fileno(), 2)
-        f.close()
+        os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+        #f = open("/dev/null", "w") #pour lancement sur mac
+          # Assurez-vous que le module os est importé
+        #f = open(os.devnull, "w")
+
+        #os.dup2(f.fileno(), 2)
+        #f.close()
                 
         pg.init()
         self.clock = pg.time.Clock()
@@ -496,7 +500,7 @@ if __name__ == '__main__':
     if player == 1:
         agent = None
     else:
-        agent = "4.376.pilot"  # TODO changer fps à 70 si agent
+        agent = "94.67.pilot"  # TODO changer fps à 70 si agent
     
     train = False
     display = True
