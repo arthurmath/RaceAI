@@ -122,7 +122,7 @@ class Adn:
     def neural_network_forward(self, vector):
         for weight, bias in zip(self.weights, self.bias):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
-            vector = self.sigmoid(vector)  # Activation function
+            vector = self.relu(vector)  # Activation function
         return vector
     
     

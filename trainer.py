@@ -34,7 +34,7 @@ class GeneticAlgo:
         self.bestGenFit = - np.inf
         self.bestScore = - np.inf
         self.list_progression = []
-        self.generation = 0
+        self.generation = 1
         itEnd = 0
         
         self.population = [Pilot(Adn()) for _ in range(self.nbPilotes)]
@@ -102,7 +102,7 @@ class GeneticAlgo:
         population_sorted = [self.population[i] for i in sorted_indices] 
         fitness_sorted = [self.fitness[i] for i in sorted_indices] 
         
-        # print(int(self.nbPilotes * self.survivalProportion), "\n")
+        # print("Prop :", int(self.nbPilotes * self.survivalProportion), "\n")
         
         self.bestPilots = population_sorted[ int(self.nbPilotes * self.survivalProportion) :] # take the 10% bests pilots
         self.bestFitness = fitness_sorted[ int(self.nbPilotes * self.survivalProportion) :]  # take the 10% bests fitness
@@ -118,15 +118,16 @@ class GeneticAlgo:
             parent1, parent2 = self.select_parents()
             baby = parent1.mate(parent2, self.mutationRate)
             self.new_population.append(baby)
-                
+        
         self.population = self.new_population
         
     
     def select_parents(self):
         """Select two pilots with high fitness."""
-        total_fitness = sum(self.bestFitness)
-        ratios = [f / total_fitness for f in self.bestFitness]
-        return rd.choices(self.new_population, weights=ratios, k=2) # Return a k-sized list
+        # total_fitness = sum(self.bestFitness)
+        # ratios = [f / total_fitness for f in self.bestFitness]
+        # print(len(ratios), len(self.new_population), type(ratios), type(self.new_population))
+        return rd.choices(self.population, k=2) # Return a k-sized list # TODO new_pop ?  weights=ratios,
 
 
 
@@ -181,9 +182,9 @@ class GeneticAlgo:
 
 if __name__ == "__main__":
     
-    population = 10 #100
-    maxGenerations = 10 #50 
-    mutation_rate = 0.01
+    population = 100
+    maxGenerations = 50 
+    mutation_rate = 0.02
     survival_rate = 0.1
     
     # Autres paramètres :
@@ -201,14 +202,11 @@ if __name__ == "__main__":
     
     # Save the weights and biases of the snakes for the new game scores
     files = listdir(Path("weights"))
-    
     with open(Path("weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
     
     # Show graph of progressions
-    
-    
     x = np.arange(len(algo.list_progression))
     plt.plot(x, algo.list_progression)
     plt.show()
