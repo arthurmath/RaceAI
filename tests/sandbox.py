@@ -2,6 +2,7 @@ import math
 import numpy as np
 import time
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 
 
 
@@ -27,35 +28,11 @@ import multiprocessing as mp
 
 
 
-import os
-import sys
 
-# # Rediriger la sortie standard et les erreurs pour cacher les logs pygame/SDL
-# sys.stdout = open(os.devnull, "w")
-# sys.stderr = open(os.devnull, "w")
-
-import pygame
-
-import os
-os.environ["PYGAME_HIDE_PROMPT"] = "1"
-f = open("/dev/null", "w")
-os.dup2(f.fileno(), 2)
-f.close()
-
-screen = pygame.display.set_mode((700, 200))
-
-# # Rétablir les sorties après l'import de pygame
-# sys.stdout = sys.__stdout__
-# sys.stderr = sys.__stderr__
-
-
-
-
-
-# same as 2> /dev/null in the shell
-
-
-
+list_progression = [1, 2, 3]
+x = np.arange(len(list_progression))
+plt.plot(x, list_progression)
+plt.show()
 
 
 

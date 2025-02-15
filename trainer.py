@@ -1,11 +1,13 @@
 import random as rd
 import numpy as np
 import pickle
+import matplotlib.pyplot as plt
 import multiprocessing as mp
 from pilot import Pilot, Adn
 from game import Session
 from pathlib import Path
 from os import listdir
+
 
 
 
@@ -31,6 +33,7 @@ class GeneticAlgo:
         self.bestFit = - np.inf
         self.bestGenFit = - np.inf
         self.bestScore = - np.inf
+        self.list_progression = []
         self.generation = 0
         itEnd = 0
         
@@ -79,7 +82,8 @@ class GeneticAlgo:
             self.scores.append(ses.car.progression)
             
             print(f"Pilot {idx+1}/{self.nbPilotes}, fitness: {self.fitness[-1]:.3f}, progression: {self.scores[-1]:.3f}%")
-        
+            
+        self.list_progression.extend(self.scores)
         self.bestGenFit = max(self.fitness)
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / self.nbPilotes
@@ -142,6 +146,7 @@ class GeneticAlgo:
         
         # Récupération des listes de résultats 
         self.fitness, self.scores = map(list, zip(*results))
+        self.list_progression.extend(self.scores)
         
         # Update
         self.bestGenFit = max(self.fitness)
@@ -200,10 +205,16 @@ if __name__ == "__main__":
     with open(Path("weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
+    
+    # Show graph of progressions
+    
+    
+    x = np.arange(len(algo.list_progression))
+    plt.plot(x, algo.list_progression)
+    plt.show()
         
             
             
-
 
 
 
