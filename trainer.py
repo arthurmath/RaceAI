@@ -207,10 +207,13 @@ if __name__ == "__main__":
     with open(Path("weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
+        
     
     # Show graph of progressions
     x = np.arange(len(algo.list_progression))
     plt.plot(x, algo.list_progression)
+    plt.xlabel("Générations")
+    plt.ylabel("Progression (%)")
     plt.show()
         
             
@@ -219,4 +222,3 @@ if __name__ == "__main__":
 
 
 
-# Faire un callback pour obtenir toutes les progressions et loss pdt l'entrainement.
