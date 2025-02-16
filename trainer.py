@@ -190,6 +190,7 @@ if __name__ == "__main__":
     
     # Autres paramètres :
     # nombre de layers NN (adn)
+    # fonctions activation 
     # parametre 0.7 pour la sélection des neurones (pilot)
     # temps d'entrainement de chaque pilote (main)
     # fps acceleration training
