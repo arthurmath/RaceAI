@@ -1,0 +1,5 @@
+pygame
+pathlib
+numpy
+matplotlib
+jax

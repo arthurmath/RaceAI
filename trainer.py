@@ -8,7 +8,7 @@ from game import Session
 from pathlib import Path
 from os import listdir
 import os
-#if os.name == 'nt':  # Si le système est Windows
+#if os.name == 'nt':  # Si l'os est Windows
  #   os.devnull = 'NUL'
 
 
@@ -203,8 +203,8 @@ if __name__ == "__main__":
     
     
     # Save the weights and biases of the snakes for the new game scores
-    files = listdir(Path("weights"))
-    with open(Path("weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
+    files = listdir(Path("results/weights"))
+    with open(Path("results/weights") / Path(f"{algo.bestScore:.2f}.pilot"), "wb") as f: # write binary
         pickle.dump((algo.bestPilotEver.adn.weights, algo.bestPilotEver.adn.bias), f)
         
         

@@ -4,7 +4,7 @@ import time
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 import random as rd
-
+import os
 
 
 
@@ -14,13 +14,13 @@ import random as rd
 # import inspect
 # import os
 
-# def write_agent_to_file(function, file):
+# def write_function_to_file(function, file):
 #     """ copie le code de fonction dans le file """
 #     with open(file, "a" if os.path.exists(file) else "w") as f:
 #         f.write(inspect.getsource(function))
 #         print(function, "written to", file)
 
-# write_agent_to_file(my_agent, "submission.py")
+# write_function_to_file(my_agent, "submission.py")
 
 
 
@@ -32,10 +32,6 @@ ratios = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0005342767487661691, 0.090081919901979
 
 for _ in range(10):
     print(rd.choices(population, weights=ratios, k=2))
-
-
-
-
 
 
 

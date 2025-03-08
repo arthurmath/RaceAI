@@ -1,4 +1,3 @@
-import pygame as pg
 import sys
 import os
 import math
@@ -9,8 +8,8 @@ import pickle
 import numpy as np
 import library as lib
 
-
-
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import pygame as pg
 
     
 class Car:
@@ -320,7 +319,7 @@ class Score:
         
     def update_high_score(self):
         """ Met à jour high_score avec le meilleur temps du fichier """
-        with open("times.txt", "r") as f:
+        with open("results/times.txt", "r") as f:
             self.high_score = min(float(line) for line in f)
     
             
@@ -377,15 +376,6 @@ class Session:
         self.width = 1200
         self.height = 900
         self.fps = 30
-        
-        # Hide pygame prints
-        os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-        #f = open("/dev/null", "w") #pour lancement sur mac
-          # Assurez-vous que le module os est importé
-        #f = open(os.devnull, "w")
-
-        #os.dup2(f.fileno(), 2)
-        #f.close()
                 
         pg.init()
         self.clock = pg.time.Clock()
@@ -433,7 +423,7 @@ class Session:
         self.score = Score(self.background, self.car)
         
         if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
-            with open(Path("weights") / Path(self.agent), "rb") as f:
+            with open(Path("results/weights") / Path(self.agent), "rb") as f:
                 weights, bias = pickle.load(f)
                 self.agent = Pilot(Adn(weights, bias))
             self.fps = 70 
