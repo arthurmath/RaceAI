@@ -120,11 +120,13 @@ class Adn:
     
     
     def neural_network_forward(self, vector):
-        for weight, bias in zip(self.weights, self.bias):
+        for idx, weight, bias in enumerate(zip(self.weights, self.bias)):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
-            vector = self.relu(vector)  # Activation function
+            if idx + 1 < len(self.weights):
+                vector = self.relu(vector)
+            else:
+                vector = self.sigmoid(vector)
         return vector
-    
     
     def relu(self, x):
         return np.maximum(x, 0)
