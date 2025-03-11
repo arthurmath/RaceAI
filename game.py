@@ -319,7 +319,7 @@ class Score:
         
     def update_high_score(self):
         """ Met à jour high_score avec le meilleur temps du fichier """
-        with open("results/times.txt", "r") as f:
+        with open("results_gene/times.txt", "r") as f:
             self.high_score = min(float(line) for line in f)
     
             
@@ -423,7 +423,7 @@ class Session:
         self.score = Score(self.background, self.car)
         
         if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
-            with open(Path("results/weights") / Path(self.agent), "rb") as f:
+            with open(Path("results_gene/weights") / Path(self.agent), "rb") as f:
                 weights, bias = pickle.load(f)
                 self.agent = Pilot(Adn(weights, bias))
             self.fps = 70 

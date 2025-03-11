@@ -37,8 +37,8 @@ class Car:
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
-        self.validate_checkpoint = 0 #validation du checkpoint 0 / checkpoint 0 = position initiale i.e ligne d'arrivée
-        self.checkpoints_radius = 45 #rayon d'entrée dans la zone du checkpoint 20 pixels
+        self.validate_checkpoint = 0
+        self.checkpoints_radius = 45
         self.traveled_distance = 0
         self.last_traveled_distance = 0
         self.last_position = (self.x, self.y)
@@ -50,7 +50,7 @@ class Car:
 
         
         
-    def update(self, ses, moves):
+    def update(self, moves):
     
         moved = False  
         self.progression = self.get_progression()
@@ -245,13 +245,12 @@ class Background:
         self.border = ses.border_img
         self.finish = ses.finish_img
         self.border_pos = (170, -10)
-        self.border_mask = pg.mask.from_surface(self.border)
-        # self.border_mask_img = show_mask(self.border)
-        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) # on crée un rect pour la ligne d'arrivée
+        self.border_mask = pg.mask.from_surface(self.border)   
+        self.finish_rect = self.finish.get_rect(topleft=(200, 330)) 
         
     def update(self, car):
         self.car_mask = pg.mask.from_surface(car.car_rotated)
-        offset = (int(car.x - self.border_pos[0] - 10), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
+        offset = (int(car.x - self.border_pos[0] - 10), int(car.y - self.border_pos[1]))
         booleen = self.border_mask.overlap(self.car_mask, offset)
         car.collision = 0 if booleen == None else 1
         
@@ -260,9 +259,6 @@ class Background:
         ses.screen.blit(self.track, self.border_pos)
         ses.screen.blit(self.border, self.border_pos)
         ses.screen.blit(self.finish, (200, 330))
-        
-        # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
-        
         
     def collision_finish(self, car):
         car_rect = car.car_rect
@@ -283,20 +279,21 @@ class Score:
         
     def update_high_score(self):
         """ Met à jour high_score avec le meilleur temps du fichier """
-        with open("results/times.txt", "r") as f:
+        with open("results_dqn/times.txt", "r") as f:
             self.high_score = min(float(line) for line in f)
     
             
-    def update(self, car):
+    def update(self, ses, car):
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         
         if self.background.collision_finish(self.car):
             if self.temps_ecoule < self.high_score: # si le temps realisé est meilleur que l'ancien record
                 if self.temps_ecoule > 15: # pour ne pas sauvegarder les marches arrières sur le finish
                     self.high_score = self.temps_ecoule 
-                    with open("times.txt", "a") as file:
+                    with open("results_dqn/times.txt", "a") as file:
                         file.write(f"{self.high_score:.3f}\n")
                 
+            ses.done = True
             self.start_ticks = pg.time.get_ticks() # reset timer
             car.reset()
             self.update_high_score()
@@ -340,6 +337,7 @@ class Session:
         self.width = 1200
         self.height = 900
         self.fps = 30
+        self.done = False
                 
         pg.init()
         self.clock = pg.time.Clock()
@@ -350,15 +348,9 @@ class Session:
             self.start_train = time.time()
             self.fps = 70 # faster training
             
-        # self.music()
         self.load_images()
         self.generate_objects()
 
-        
-    def music(self):
-        self.music = pg.mixer.music.load('media/BandeOrganise.mp3')
-        pg.mixer.music.set_volume(0.3)
-        pg.mixer.music.play(-1)
         
     def load_images(self):
         self.car_img = pg.image.load('media/car.png').convert_alpha()
@@ -385,19 +377,13 @@ class Session:
         self.car = Car(self)
         self.background = Background(self)
         self.score = Score(self.background, self.car)
-        
-        if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
-            with open(Path("results/weights") / Path(self.agent), "rb") as f:
-                weights, bias = pickle.load(f)
-                self.agent = Pilot(Adn(weights, bias))
-            self.fps = 70 
             
         
-    def update(self):
-        self.car.update(self, moves)
+    def update(self, moves):
+        self.car.update(moves)
         self.background.update(self.car)
-        self.score.update(self.car)
-        self.clock.tick(self.fps) # garder ?
+        self.score.update(self, self.car)
+        self.clock.tick(self.fps) # TODO garder ?
     
     def draw(self):
         self.background.draw(self)
@@ -425,106 +411,51 @@ class Session:
         if self.display:
                 self.draw()
                 
-        next_state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.collision, self.car.nbCollisions, self.car.progression]
+        next_state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.collision, self.car.nbCollisions, self.car.progression] # TODO supprimer collision
+        next_state = self.normalize_state(next_state)
         
-        return next_state, reward, done, truncated, info
+        if self.car.nbCollisions > 10:
+            self.done = True
+        
+        old_fitness = 1
+        new_reward = self.get_reward(self.car, reward)
+        
+        reward = new_reward - reward
+        
+        return next_state, reward, self.done
     
+            
+    def normalize_state(self, state):
+        # Il faut que les entrées soient dans [-1, 1] pour converger
+        list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 1], [0, 500], [0, 100], [0, 3], [0, 3]]
+        for idx, ranges in enumerate(list_ranges):
+            state[idx] = self.scale(state[idx], *ranges)
+        return state
+
+    def scale(self, x, a, b):
+        """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
+            en une valeur comprise dans l'intervalle [-1, 1]."""
+        return 2 * (x - a) / (b - a) - 1
+    
+    
+    def compute_fitness(self, car): # TODO
+        self.fitness = car.progression ** 2 / car.nbCollisions if car.nbCollisions else car.progression ** 2
+        return self.fitness
+    
+    def reset(self):
+        state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.collision, self.car.nbCollisions, self.car.progression]
+        state = self.normalize_state(state)
+        
+        return state
+    
+    def close(self):
+        pg.quit()
 
         
 
 
-if __name__ == '__main__':
-    
-    def show_mask(img): #(chatgpt)
-        # Créer une surface noire de la taille du masque
-        mask = pg.mask.from_surface(img)
-        mask_surface = pg.Surface(mask.get_size(), flags=pg.SRCALPHA)
-        mask_surface.fill((0, 0, 0, 0))  # Transparence
-
-        # Parcourir les pixels du masque et colorier en blanc les pixels actifs
-        for x in range(mask.get_size()[0]):
-            for y in range(mask.get_size()[1]):
-                if mask.get_at((x, y)):  # Si le pixel est actif (valeur 1)
-                    mask_surface.set_at((x, y), (255, 255, 255, 255))  # Blanc
-
-        return mask_surface
-
-
-    
-    
-    # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
-    # player = int(input("Entrez votre choix (1 ou 2) : "))
-    
-    player = 2
-    
-    if player == 1:
-        agent = None
-    else:
-        agent = "94.67.pilot"  # TODO changer fps à 70 si agent
-    
-    train = False
-    display = True
-    training_time = None
-    
-    ses = Session(train, agent, display, training_time)
-    ses.run()
-    
-    pg.quit()
-    sys.exit()
-    
-    
     
     
     
 
-
-
-
-
-
-
-
-
-
-
-
-# lines = [((300, 40), (300, 650), (0, 0, 255)),
-#          ((200, 130), (400, 130), (255, 0, 255)),
-#          ((320, 390), (520, 390), (0, 0, 255)),
-#          ((420, 150), (420, 500), (0, 0, 255)),
-#          ((530, 30), (530, 400), (0, 0, 255)),
-#          ((440, 125), (1030, 125), (0, 0, 255)),
-#          ((940, 40), (940, 320), (0, 0, 255)),
-#          ((620, 240), (1050, 240), (0, 0, 255)),
-#          ((680, 240), (680, 440), (0, 0, 255)),
-#          ((570, 340), (1000, 340), (0, 0, 255)),
-#          ((600, 440), (1030, 440), (0, 0, 255)),
-#          ((940, 360), (940, 840), (0, 0, 255)),
-#          ((800, 750), (1030, 750), (0, 0, 255)),
-#          ((890, 600), (890, 840), (0, 0, 255)),
-#          ((580, 580), (870, 580), (0, 0, 255)),
-#          ((780, 490), (780, 770), (0, 0, 255)),
-#          ((680, 490), (680, 770), (0, 0, 255)),
-#          ((570, 570), (570, 840), (0, 0, 255)),
-#          ((170, 370), (620, 820), (0, 0, 255)),
-#          ]
-
-# for start, end, color in lines:
-#     pg.draw.line(ses.screen, color, start, end, 2)
-
-
-
-
-
-
-    #if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-        #pos = pg.mouse.get_pos()
-        #self.checkpoints_fin.append(pos)
-        #with open("checkpoints", "a") as file:
-        #    file.write(f"{self.checkpoints_fin}\n")
-        #print({pos})
-        
-        
-        
-        
         

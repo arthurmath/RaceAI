@@ -5,6 +5,7 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 import random as rd
 import os
+import sys
 
 
 
@@ -32,9 +33,6 @@ ratios = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0005342767487661691, 0.090081919901979
 
 for _ in range(10):
     print(rd.choices(population, weights=ratios, k=2))
-
-
-
 
 
 
