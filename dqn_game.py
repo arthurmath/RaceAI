@@ -29,6 +29,8 @@ class Car:
         self.collision = 0
         self.compteur = 0 # pour les collisions
         self.nbCollisions = 0
+        self.actions = ['U', 'D', 'L', 'R']
+        self.progression = 0
         
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
                             (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
@@ -55,7 +57,7 @@ class Car:
         moved = False  
         self.progression = self.get_progression()
         self.previous_pos = (self.x, self.y) 
-           
+        moves = self.actions[moves]
                     
         if 'L' in moves:
             self.angle = (self.angle + self.rotation_speed) % 360
@@ -103,30 +105,26 @@ class Car:
     
     
     def get_progression(self):
-        """ Calcule l'avancée de la voiture sur le circuit : distance parcourue et checkpoints"""
+        """ Calcule l'avancée de la voiture sur le circuit """
 
-        #La variable validate checkpoint permet, sur un cercle approximé centré sur le checkpoint, de valider la prise de checkpoint peu importe le sens
+        #La variable validate_checkpoint permet, sur un cercle centré sur le checkpoint, de valider la prise de checkpoint peu importe le sens
         current_position = (self.x, self.y)
-        checkpoint_progress = False
 
         for i, checkpoint in enumerate(self.checkpoints) :
             
             #Calcul de la distance entre la voiture et le checkpoint d'avant et d'après
             dist = math.dist((self.x, self.y), checkpoint)
 
-            "Note pour l'aide à la compréhension de la fonction"
             """A un instant t :
                 self.validate_checkpoint - 1 : checkpoint actuel
                 self.validate_checkpoint : checkpoint suivant
                 self.validate_checkpoint - 2 : checkpoint précédent"""
 
             if dist <= self.checkpoints_radius and i == self.validate_checkpoint - 1 : #On ne veut pas revalider un checkpoint déjà pris
-                # print(f'Warning ! Going past the current cp {i+1} ')
                 self.in_checkpoint = True
                 break
 
             if (dist <= self.checkpoints_radius and i == self.validate_checkpoint) : #Validation du checkpoint d'après
-
                 self.validate_checkpoint += 1 #le prochain checkpoint à valider sera le self.validate_checkpoint + 1 
                 self.validate_checkpoint = min(self.validate_checkpoint, len(self.checkpoints)) #Pour éviter une éventuelle erreur dans la boucle
                 self.in_checkpoint = False
@@ -142,17 +140,12 @@ class Car:
                 self.in_checkpoint = False
         
         if self.validate_checkpoint > 0:
-
-            current_checkpoint = self.checkpoints[self.validate_checkpoint- 1]
-            next_checkpoint = self.checkpoints[self.validate_checkpoint]
-            prev_checkpoint = self.checkpoints[self.validate_checkpoint - 2]
-            "POUR FORWARD "
-            #vecteur entre current et previous pos ((prevpos, currentpos))
-            vect_curr_prev = np.array([current_position[0] - self.previous_pos[0], current_position[1] - self.previous_pos[1]])
-
-            #vect entre cp actuel et suivant 
-            vect_curr_next_cp = - np.array([current_checkpoint[0] - next_checkpoint[0], current_checkpoint[1] - next_checkpoint[1]])
-            "FIN POUR FORWARD "
+            try:
+                current_checkpoint = self.checkpoints[self.validate_checkpoint- 1]
+                next_checkpoint = self.checkpoints[self.validate_checkpoint]
+                prev_checkpoint = self.checkpoints[self.validate_checkpoint - 2]
+            except:
+                return 0
 
             "POUR CALCUL DE LA DISTANCE PARCOURUE"
             # Position projetée de la voiture sur la droite current cp -> next cp
@@ -166,20 +159,16 @@ class Car:
 
             "POUR SAVOIR SI ON EST DERRIERE LE DERNIER CHECKPOINT VALIDE"
             # Positions projetées
-            #projection sur x et y de la voiture
-            #Sur x
-            coord_curr_pos_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_position)[0]
-            #Sur y 
-            coord_curr_pos_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_position)[1]
+            # projection sur x et y de la voiture
+            coord_curr_pos_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_position)[0] #Sur x
+            coord_curr_pos_y = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_position)[1] #Sur y 
             #Projection du current cp
-            #Sur x
-            coord_curr_cp_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[0]
-            #Sur y
-            coord_curr_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[1]
+            coord_curr_cp_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[0] #Sur x 
+            coord_curr_cp_y = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[1] #Sur y 
             #Projection du next cp
-            coord_next_cp_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[0]
-            #Sur y
-            coord_next_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[1]
+            coord_next_cp_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[0] #Sur x 
+            coord_next_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[1] #Sur y 
+            
             #Maintenant que nous avons les projections de la voiture, du current cp et du next cp dans la base, traçons les vecteurs
             #Voiture avec curr cp
             vect_car_curr_cp_x = np.array([coord_curr_pos_x[0] - coord_curr_cp_x[0], coord_curr_pos_x[1] - coord_curr_cp_x[1]])
@@ -200,29 +189,21 @@ class Car:
             "FIN POUR SAVOIR SI ON EST DERRIERE LE DERNIER CHECKPOINT VALIDE"
 
             if self.speed != 0 :
-                forward = 1 if np.dot(vect_curr_next_cp, vect_curr_prev) > 0 else -1
-                #print(forward)
-                dist_to_current_cp = math.dist(current_checkpoint, (projected_x_current, projected_y_current))
                 
-                # print(out_of_reach_cp, dist_to_current_cp, behind_cp, np.dot(vect_car_curr_cp, vect_curr_next_cp))
                 if (self.behind_cp == True) and ((self.validate_checkpoint - 1 > 0) == True) :
                     
                     segment_distance = abs(math.dist(prev_checkpoint, (projected_x_prev, projected_y_prev)))
-                    #print('OK1')
                     self.traveled_distance = abs(sum([math.dist(self.checkpoints[checked], self.checkpoints[checked + 1]) for checked in range(self.validate_checkpoint -2 )]) + segment_distance)
                 else :
                     segment_distance = abs(math.dist(current_checkpoint, (projected_x_current, projected_y_current)))
-
                     self.traveled_distance = abs(sum([math.dist(self.checkpoints[checked], self.checkpoints[checked + 1]) for checked in range(self.validate_checkpoint -1 )]) + segment_distance)
 
                     # Mettre à jour la distance parcourue
 
                 self.last_traveled_distance = self.traveled_distance
             else :
-                forward = 0
                 self.traveled_distance = self.last_traveled_distance
 
-        # print(forward)
         progression = (self.traveled_distance/self.total_distance)*100
         return min(max(progression, 0) ,100)
     
@@ -233,9 +214,6 @@ class Car:
         self.angle = 0
         
         
-        
-    
-
 
 
 class Background:
@@ -265,7 +243,6 @@ class Background:
         return car_rect.colliderect(self.finish_rect)
         
         
-        
 
 
 class Score:
@@ -291,7 +268,7 @@ class Score:
                 if self.temps_ecoule > 15: # pour ne pas sauvegarder les marches arrières sur le finish
                     self.high_score = self.temps_ecoule 
                     with open("results_dqn/times.txt", "a") as file:
-                        file.write(f"{self.high_score:.3f}\n")
+                        file.write(f"DQN: {self.high_score:.3f}\n")
                 
             ses.done = True
             self.start_ticks = pg.time.get_ticks() # reset timer
@@ -328,11 +305,8 @@ class Score:
 
 
 class Session:        
-    def __init__(self, train, agent, display, training_time):
-        self.train = train
-        self.agent = agent
+    def __init__(self, display):
         self.display = display
-        self.training_time = training_time
         
         self.width = 1200
         self.height = 900
@@ -344,13 +318,7 @@ class Session:
         self.screen = pg.display.set_mode((self.width, self.height))
         pg.display.set_caption('Race AI')
         
-        if train:
-            self.start_train = time.time()
-            self.fps = 70 # faster training
-            
         self.load_images()
-        self.generate_objects()
-
         
     def load_images(self):
         self.car_img = pg.image.load('media/car.png').convert_alpha()
@@ -373,6 +341,14 @@ class Session:
         img_width, img_height = self.finish_img.get_size()
         self.finish_img = pg.transform.scale(self.finish_img, (img_width * 0.78 , img_height * 0.78))
         
+    def reset(self):
+        self.done = False
+        self.generate_objects()
+        self.old_fitness = 0
+        state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.nbCollisions, self.car.progression]
+        state = self.normalize_state(state)
+        return state
+        
     def generate_objects(self):
         self.car = Car(self)
         self.background = Background(self)
@@ -390,44 +366,40 @@ class Session:
         self.car.draw(self)
         self.score.draw(self, self.car)
         pg.display.flip()
-
-    def run(self):
-        running = True
-        while running:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    running = False
         
-            self.update()
-            
-            if self.train:
-                if time.time() - self.start_train > self.training_time:
-                    running = False
-            if self.display:
-                self.draw()
     
     def step(self, moves):
+        for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    self.done = True
+                    
         self.update(moves)
         if self.display:
-                self.draw()
+            self.draw()
                 
-        next_state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.collision, self.car.nbCollisions, self.car.progression] # TODO supprimer collision
+        next_state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.nbCollisions, self.car.progression] 
         next_state = self.normalize_state(next_state)
         
+        self.fitness = self.car.progression
+        reward = self.fitness - self.old_fitness
+        self.old_fitness = self.fitness
+        
+        # if reward > 0:
+        #     print(f"{self.fitness=:.2f}, {reward=:.2f}")
+        
+        if self.car.collision:
+            reward -= 1
+            
         if self.car.nbCollisions > 10:
             self.done = True
-        
-        old_fitness = 1
-        new_reward = self.get_reward(self.car, reward)
-        
-        reward = new_reward - reward
         
         return next_state, reward, self.done
     
             
     def normalize_state(self, state):
         # Il faut que les entrées soient dans [-1, 1] pour converger
-        list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 1], [0, 500], [0, 100], [0, 3], [0, 3]]
+        list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 500], [0, 100]]
+        # state = [self.scale(state[i], *list_ranges[i]) for i in range(len(state))]
         for idx, ranges in enumerate(list_ranges):
             state[idx] = self.scale(state[idx], *ranges)
         return state
@@ -436,17 +408,8 @@ class Session:
         """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
             en une valeur comprise dans l'intervalle [-1, 1]."""
         return 2 * (x - a) / (b - a) - 1
-    
-    
-    def compute_fitness(self, car): # TODO
-        self.fitness = car.progression ** 2 / car.nbCollisions if car.nbCollisions else car.progression ** 2
-        return self.fitness
-    
-    def reset(self):
-        state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.collision, self.car.nbCollisions, self.car.progression]
-        state = self.normalize_state(state)
-        
-        return state
+
+
     
     def close(self):
         pg.quit()
@@ -454,8 +417,21 @@ class Session:
         
 
 
+
+
+
+if __name__=='__main__':
+    ses = Session(display=True)
+    ses.reset()
     
+    for step in range(100):
+        _, _, _ = ses.step(moves=0)
+        
     
     
 
         
+
+
+
+# speed projetée sur x et y dans state ?

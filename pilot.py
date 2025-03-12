@@ -47,7 +47,7 @@ class Pilot():
         while len(self.previous_moves) > 2:
             self.previous_moves.pop(0) # on ne garde que les 2 derniers moves
             
-        self.nbMove += len(choices)
+        self.nbMove += len(choices) # inutilisé
         
         self.moves = [self.actions[choice] for choice in choices]
             

@@ -2,4 +2,5 @@ pygame
 pathlib
 numpy
 matplotlib
+matplotlib.animation
 jax
