@@ -1,10 +1,5 @@
-import sys
 import os
 import math
-import time
-from pilot import Pilot, Adn
-from pathlib import Path
-import pickle
 import numpy as np
 import library as lib
 
@@ -347,7 +342,7 @@ class Session:
         self.old_fitness = 0
         state = [self.car.x, self.car.y, self.car.speed, self.car.angle, self.car.nbCollisions, self.car.progression]
         state = self.normalize_state(state)
-        return state
+        return state, self.done
         
     def generate_objects(self):
         self.car = Car(self)
@@ -370,8 +365,8 @@ class Session:
     
     def step(self, moves):
         for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.done = True
+            if event.type == pg.QUIT:
+                self.done = True
                     
         self.update(moves)
         if self.display:
@@ -384,8 +379,8 @@ class Session:
         reward = self.fitness - self.old_fitness
         self.old_fitness = self.fitness
         
-        # if reward > 0:
-        #     print(f"{self.fitness=:.2f}, {reward=:.2f}")
+        if reward > 0:
+            print(f"{self.fitness=:.4f}, {reward=:.4f}")
         
         if self.car.collision:
             reward -= 1

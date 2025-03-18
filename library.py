@@ -23,10 +23,10 @@ def ortho_projection (ortho_sys_x, ortho_sys_y, position_to_proj) :
     dy_y = ortho_sys_y[1][1] - ortho_sys_y[0][1]
 
     if dx_x == 0 and dy_x == 0:
-        print("⚠️ Erreur: dx_x et dy_x sont nuls après le checkpoint")
+        print("⚠️ Erreur: dx_x et dy_x sont nuls après le checkpoint (library)")
 
     if dx_y == 0 and dy_y == 0:
-        print("⚠️ Erreur: dx_y et dy_y sont nuls après le checkpoint")
+        print("⚠️ Erreur: dx_y et dy_y sont nuls après le checkpoint (library)")
 
     t_x = ((position_to_proj[0] - ortho_sys_x [0][0]) * dx_x + (position_to_proj[1] - ortho_sys_x[0][1])*dy_x) / (dx_x **2 + dy_x **2)
     t_y = ((position_to_proj[0] - ortho_sys_y[0][0]) * dx_y + (position_to_proj[1] - ortho_sys_y[0][1]) * dy_y) / (dx_y ** 2 + dy_y ** 2)
