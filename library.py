@@ -1,4 +1,4 @@
-
+import pygame as pg
 
 def projection_betw_cp (starting_cp, ending_cp, position_to_proj) :
     "starting_cp, ending_cp et position_to_proj sont des tuples de coordonnées de la forme (x,y)"
@@ -42,4 +42,21 @@ def ortho_projection (ortho_sys_x, ortho_sys_y, position_to_proj) :
 
     return(coord_proj_pos_x, coord_proj_pos_y)
 
-    
+def show_mask(img): #(chatgpt)
+    # Créer une surface noire de la taille du masque
+    mask = pg.mask.from_surface(img)
+    mask_surface = pg.Surface(mask.get_size(), flags=pg.SRCALPHA)
+    mask_surface.fill((0, 0, 0, 0))  # Transparence
+
+    # Parcourir les pixels du masque et colorier en blanc les pixels actifs
+    for x in range(mask.get_size()[0]):
+        for y in range(mask.get_size()[1]):
+            if mask.get_at((x, y)):  # Si le pixel est actif (valeur 1)
+                mask_surface.set_at((x, y), (255, 255, 255, 255))  # Blanc
+
+    return mask_surface
+
+def scale(x, a, b):
+    """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
+        en une valeur comprise dans l'intervalle [-1, 1]."""
+    return 2 * (x - a) / (b - a) - 1

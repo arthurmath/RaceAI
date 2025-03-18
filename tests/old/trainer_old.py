@@ -3,8 +3,8 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import multiprocessing as mp
-from pilot import Pilot, Adn
-from game import Session
+from gene_pilot import Pilot, Adn
+from gene_game import Session
 from pathlib import Path
 from os import listdir
 import os
