@@ -56,6 +56,12 @@ def show_mask(img): #(chatgpt)
 
     return mask_surface
 
+def normalisation(states):
+    """ Il faut que les entrées soient dans [-1, 1] pour converger """
+    list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [0, 100]]
+    states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
+    return states
+
 def scale(x, a, b):
     """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
         en une valeur comprise dans l'intervalle [-1, 1]."""

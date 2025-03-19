@@ -6,6 +6,7 @@ import random as rd
 SEED = 42
 MUTATION_RATE = 0.5
 STD_MUTATION = 0.3
+NN_LAYERS = [5, 6, 6, 4]
 
 
 np.random.seed(SEED)
@@ -16,29 +17,27 @@ rd.seed(SEED)
 class Pilot:
    
     def __init__(self, weights=None, biases=None):
-        self.fitness = 0
-        self.layersSize = [5, 4, 4, 4]
     
         if weights != None :
             self.weights = cp.deepcopy(weights)
         else:
-            self.initialize_rd_weights()
+            self.initialize_weights()
             
         if biases != None:
             self.bias = cp.deepcopy(biases)
         else:
-            self.initialize_rd_bias()
+            self.initialize_bias()
         
             
-    def initialize_rd_weights(self):
+    def initialize_weights(self):
         self.weights = []
-        for i in range(len(self.layersSize) - 1): 
+        for i in range(len(NN_LAYERS) - 1): 
             # Pour chaque couche du NN, creation d'une matrice de poids 
-            layer = [[rd.uniform(-1, 1) for _ in range(self.layersSize[i+1])] for _ in range(self.layersSize[i])] # rd.gauss(0, 0.5)
+            layer = [[rd.uniform(-1, 1) for _ in range(NN_LAYERS[i+1])] for _ in range(NN_LAYERS[i])] # rd.gauss(0, 0.5)
             self.weights.append(np.matrix(layer))
             
         
-    def initialize_rd_bias(self):
+    def initialize_bias(self):
         self.bias = []
         for layer in self.weights:
             nbrBias = np.size(layer, axis=1)
@@ -49,7 +48,6 @@ class Pilot:
         for weight, bias in zip(self.weights, self.bias):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
             vector = self.heaviside(vector)
-
         return vector
     
     def relu(self, x):
@@ -59,7 +57,7 @@ class Pilot:
         return 1 / (1 + np.exp(-x))
     
     def heaviside(self, x):
-        return (x > 0)
+        return (x > 0).astype(int)
     
     
 
@@ -135,10 +133,10 @@ if __name__ == '__main__':
     pilot2 = Pilot()
 
     action1 = pilot1.predict(state)
-    print(action1.tolist()[0][0])
+    print(action1.tolist()[0])
     
     action2 = pilot2.predict(state)
-    print(action2.tolist()[0][0])
+    print(action2.tolist()[0])
     
     
     

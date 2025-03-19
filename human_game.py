@@ -345,7 +345,7 @@ class Session:
             self.start_train = time.time()
             self.fps = 70 # faster training
             
-        # self.music()
+        self.music()
         self.load_images()
         self.generate_objects()
 

@@ -1,15 +1,16 @@
 import sys
 import os
 import math
-import time
-from gene_pilot import Pilot
-from pathlib import Path
-import pickle
 import numpy as np
 import library as lib
+from pathlib import Path
+from gene_pilot import Pilot
+import pickle
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame as pg
+
+
 
     
 class Car:
@@ -22,6 +23,7 @@ class Car:
         self.rotation_speed = 9
         self.max_speed = 10
         self.progression = 0
+        self.old_progression = 0
         self.alive = True
         
         self.car_img = ses.car_img
@@ -52,15 +54,16 @@ class Car:
 
         
         
-    def update(self, actions):
+    def update(self, actions: list[int]):
     
         moved = False  
         self.progression = self.get_progression()
-        self.previous_pos = (self.x, self.y)       
+        self.previous_pos = (self.x, self.y) 
         
-        moves = ['U', 'D', 'L', 'R']
+        moves = ['U', 'D', 'L', 'R']      
+        
         actions = [moves[action] for action in actions]
-                    
+        
         if 'L' in actions:
             self.angle = (self.angle + self.rotation_speed) % 360
         if 'R' in actions:
@@ -91,7 +94,6 @@ class Car:
         self.y -= self.speed * math.cos(rad) 
         self.x -= self.speed * math.sin(rad) 
         
-        # print([self.x, self.y, self.speed, self.angle, self.collision, self.progression])
 
 
     def draw(self, ses):
@@ -215,7 +217,6 @@ class Car:
         
         
         
-    
 
 
 
@@ -276,10 +277,11 @@ class Score:
         self.temps_ecoule = (pg.time.get_ticks() - self.start_ticks) / 1000
         for car in car_list:
             if self.background.collision_finish(car):
+                car.alive = False
                 if self.temps_ecoule < self.high_score: # si le temps realisé est meilleur que l'ancien record
                     if self.temps_ecoule > 15: # pour ne pas sauvegarder les marches arrières sur le finish
                         self.high_score = self.temps_ecoule 
-                        with open("times.txt", "a") as file:
+                        with open("results_gene/times.txt", "a") as file:
                             file.write(f"{self.high_score:.3f}\n")
                     
                 self.start_ticks = pg.time.get_ticks() # reset timer
@@ -298,7 +300,7 @@ class Score:
         ses.screen.blit(text_surface, text_rect)
         
         # affichage high score
-        text1 = f"Meilleur temps : {self.high_score:.3f}s"
+        text1 = f"Generation : {self.ses.generation}"
         text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
@@ -316,37 +318,27 @@ class Score:
 
 
 class Session:        
-    def __init__(self, train, display, training_time, nb_cars):
-        self.train = train
+    def __init__(self, nb_cars, display=True, gen=1):
         self.display = display
-        self.training_time = training_time
         self.nb_pilots = nb_cars
         self.nb_alive = nb_cars
         self.done = False
+        self.generation = gen
+        self.scores = [0] * self.nb_pilots
         
         self.width = 1200
         self.height = 900
-        self.fps = 30
+        self.fps = 60
         
         pg.init()
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((self.width, self.height))
         pg.display.set_caption('Race AI')
-        
-        if train:
-            self.start_train = time.time()
-            self.fps = 70 # faster training
-            
-        # self.music()
+
         self.load_images()
         self.generate_objects()
 
-        
-    def music(self):
-        self.music = pg.mixer.music.load('media/BandeOrganise.mp3')
-        pg.mixer.music.set_volume(0.3)
-        pg.mixer.music.play(-1)
-        
+
     def load_images(self):
         self.car_img = pg.image.load('media/car.png').convert_alpha()
         img_width, img_height = self.car_img.get_size()
@@ -371,15 +363,7 @@ class Session:
     def generate_objects(self):
         self.car_list = [Car(self) for _ in range(self.nb_pilots)]
         self.background = Background(self)
-        self.score = Score(self.background, self) 
-        
-    def reset(self):
-        self.states = []
-        self.scores = [0] * self.nb_pilots
-        for car in self.car_list:
-            self.states.append([car.x, car.y, car.speed, car.angle, car.progression])   
-        self.normalisation() 
-        return self.states           
+        self.score = Score(self.background, self)        
         
         
     def update(self, actions):
@@ -411,22 +395,35 @@ class Session:
         if not any([car.alive for car in self.car_list]):
             self.done = True
             
-        for i, car in enumerate(self.car_list):
-            if car.alive:
-                self.states[i] = [car.x, car.y, car.speed, car.angle, car.progression]
-                self.scores[i] = car.progression
-                
-        self.normalisation()
-        
+        self.states = self.get_states()
+        self.update_scores()
+
         return self.states, self.scores
 
 
-    def normalisation(self):
-        """ Il faut que les entrées soient dans [-1, 1] pour converger """
-        list_ranges = [[0, 1200], [0, 900], [-10, 10], [0, 360], [0, 100]]
-        for i, state in enumerate(self.states):
-            self.states[i] = [lib.scale(np.array(state[i]), *list_ranges[i]) for i in range(len(state))]
+    def get_states(self):
+        self.states = [[car.x, car.y, car.speed, car.angle, car.progression] for car in self.car_list]
+        self.states = lib.normalisation(self.states) 
+        return self.states    
+
         
+    def update_scores(self):
+        for i, car in enumerate(self.car_list):
+            if car.alive:
+                self.scores[i] += 10 * (car.progression - car.old_progression)
+                car.old_progression = car.progression
+
+                # reward = car.progression / 100
+                
+                self.scores[i] -= 0.1 # pénalise l’inaction
+
+                # if car.collision:
+                    # reward -= 0.5
+                # if self.car.progression >= 10:
+                    # reward += 10
+                    
+            else:
+                self.scores[i] -= 10
 
             
     
@@ -439,12 +436,9 @@ class Session:
 if __name__ == '__main__':
     
     nb_cars = 100
-    train = True
-    display = True
-    training_time = None
     
-    ses = Session(train, display, training_time, nb_cars)
-    states = ses.reset()
+    ses = Session(nb_cars)
+    states = ses.get_states()
     
     while not ses.done:
         ### RANDOM ###
@@ -453,7 +447,7 @@ if __name__ == '__main__':
         
         ### AGENT ###
         # n_train = len(os.listdir(Path("weights"))) # nb de fichiers dans dossier weights
-        # with open(Path("weights") / Path(f"{n_train-1}.weights"), "rb") as f:
+        # with open(Path("results_gene/weights") / Path(f"{n_train-1}.weights"), "rb") as f:
         #     weights, bias = pickle.load(f)
         #     agent = Pilot(weights, bias)
         # actions = [agent.predict(states).tolist()[0][0]]
@@ -462,7 +456,7 @@ if __name__ == '__main__':
         states, scores = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
     
-    print(sorted(scores))
+    
     pg.quit()
     sys.exit(0)
     

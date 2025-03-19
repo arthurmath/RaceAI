@@ -6,15 +6,15 @@ from gene_pilot import Pilot
 from gene_game import Session
 from pathlib import Path
 import copy as cp
-import pygame as pg
-pg.init()
 
 
 
-N_EPISODES = 10
-N_STEPS = 200    
 POPULATION = 500
 SURVIVAL_RATE = 0.1
+N_EPISODES = 20
+N_STEPS = 100    
+EPISODE_INCREASE = 2
+
     
 # Autres paramètres :
 # nombre de layers NN
@@ -30,37 +30,47 @@ class GeneticAlgo:
         
         self.population = [Pilot() for _ in range(POPULATION)]
 
-        for generation in range(N_EPISODES):
+        for self.generation in range(N_EPISODES):
             
             self.evaluate_generation()        
             self.bests_survives()
             self.change_generation()
             
-            print(f"Generation {generation+1}, average score: {self.avgGenScore:.0f}, best score: {self.bestGenScore:.2f}")
+            if self.ses.done:
+                break
             
-        self.evaluate_generation() # Evaluate the last generation
-        self.bests_survives()
-        self.bestPilotEver = self.bestPilots[-1]
+            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}\n")
+            
+        # self.evaluate_generation() # Evaluate the last generation
+        # self.bests_survives()
+        # self.bestPilotEver = self.bestPilots[-1]
         
 
 
     def evaluate_generation(self):
         self.scores = []
             
-        ses = Session(train=True, display=True, training_time=None, nb_cars=POPULATION)
-        states = ses.reset()
+        self.ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
+        states = self.ses.get_states()
 
-        for step in range(N_STEPS):
+        for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
             
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
             actions = [mat.tolist()[0] for mat in actions]
-            states, self.scores = ses.step(actions)
+            actions = [[j for j, act in enumerate(action) if act] for action in actions]
+        
+            states, self.scores = self.ses.step(actions)
+            
+            # print("STATES :", states)
+            # print("ACTIONS : ", actions)
+            
+            if self.ses.done:
+                break
             
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
         self.list_scores.append(self.bestGenScore)
         
-
 
             
     def bests_survives(self):
@@ -72,8 +82,10 @@ class GeneticAlgo:
         
         self.bestPilots = population_sorted[:int(POPULATION * SURVIVAL_RATE)] # take the 10% bests pilots
         self.bestscores = scores_sorted[:int(POPULATION * SURVIVAL_RATE)]  # take the 10% bests scores
+        
+        print([round(x, 2) for x in self.bestscores])
                 
-                
+
                 
     def change_generation(self):
         """ Creates a new generation of pilot. """
@@ -96,8 +108,7 @@ class GeneticAlgo:
         return rd.choices(self.bestPilots, weights=ratios, k=2) # return a k-sized list
 
 
-    
-    
+
 
 
 
