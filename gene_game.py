@@ -419,8 +419,8 @@ class Session:
         for i, car in enumerate(self.car_list):
             self.scores[i] = car.progression
             
-            if not car.alive:
-                self.scores[i] -= 100
+            # if not car.alive:
+            #     self.scores[i] -= 100
 
         return self.scores
     

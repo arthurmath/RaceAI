@@ -4,9 +4,9 @@ import random as rd
 
 
 SEED = 42
-MUTATION_RATE = 0.5
+MUTATION_RATE = 0.1
 STD_MUTATION = 0.5
-NN_LAYERS = [5, 6, 6, 4]
+NN_LAYERS = [5, 7, 6, 4]
 
 
 np.random.seed(SEED)
@@ -16,8 +16,9 @@ rd.seed(SEED)
 
 class Pilot:
    
-    def __init__(self, weights=None, biases=None):
-    
+    def __init__(self, weights=None, biases=None, coef=5):
+        self.coef = coef
+        
         if weights != None :
             self.weights = cp.deepcopy(weights)
         else:
@@ -33,7 +34,7 @@ class Pilot:
         self.weights = []
         for i in range(len(NN_LAYERS) - 1): 
             # Pour chaque couche du NN, creation d'une matrice de poids 
-            layer = [[rd.uniform(-1, 1) for _ in range(NN_LAYERS[i+1])] for _ in range(NN_LAYERS[i])] # rd.gauss(0, 0.5)
+            layer = [[self.coef for _ in range(NN_LAYERS[i+1])] for _ in range(NN_LAYERS[i])] # rd.gauss(0, 0.5)
             self.weights.append(np.matrix(layer))
             
         
@@ -41,7 +42,7 @@ class Pilot:
         self.bias = []
         for layer in self.weights:
             nb_bias = layer.shape[1]
-            self.bias.append(np.array([rd.uniform(-1, 1) for _ in range(nb_bias)])) # rd.gauss(0, 0.5)
+            self.bias.append(np.matrix([self.coef for _ in range(nb_bias)])) # rd.gauss(0, 0.5)
             
     
     def predict(self, vector):
@@ -104,7 +105,7 @@ class Pilot:
             for i in range(layer1.shape[0]):
                 for j in range(layer1.shape[1]):
                     if rd.random() > 0.5:
-                        res[i][j] = layer2[i][j]
+                        res[i, j] = layer2[i, j]
         return res
     
 
@@ -121,7 +122,8 @@ class Pilot:
         mask = np.random.rand(*layer.shape) < MUTATION_RATE # Tableau de True et False
         mutations = np.clip(np.random.normal(0, STD_MUTATION, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations) 
-        return layer
+        return np.matrix(layer)
+
 
     
     
@@ -132,16 +134,21 @@ if __name__ == '__main__':
     
     state = [-1.0, -0.34, -0.73, -0.1, 0.8]
 
-    pilot1 = Pilot()
-    pilot2 = Pilot()
+    pilot1 = Pilot(coef=1)
+    pilot2 = Pilot(coef=2)
 
-    action1 = pilot1.predict(state)
-    print(action1.tolist()[0])
+    # action1 = pilot1.predict(state)
+    # print(action1.tolist()[0])
     
-    action2 = pilot2.predict(state)
-    print(action2.tolist()[0])
+    # action2 = pilot2.predict(state)
+    # print(action2.tolist()[0])
     
     baby = pilot1.mate(pilot2)
+    
+    print(baby.weights)
+    print()
+    baby.mutate()
+    print(baby.weights)
     
     
     

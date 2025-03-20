@@ -35,10 +35,10 @@ class GeneticAlgo:
             self.bests_survives()
             self.change_generation()
             
-            if self.ses.done:
-                break
+            # if self.ses.done:
+            #     break
             
-            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}\n")
+            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}")
             
         # self.evaluate_generation() # Evaluate the last generation
         # self.bests_survives()
@@ -49,8 +49,8 @@ class GeneticAlgo:
     def evaluate_generation(self):
         self.scores = []
             
-        self.ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
-        states = self.ses.get_states()
+        ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
+        states = ses.get_states()
 
         for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
             
@@ -58,15 +58,15 @@ class GeneticAlgo:
             actions = [mat.tolist()[0] for mat in actions]
             actions = [[j for j, act in enumerate(action) if act] for action in actions]
         
-            states = self.ses.step(actions)
+            states = ses.step(actions)
             
             # print("STATES :", states)
             # print("ACTIONS : ", actions)
             
-            if self.ses.done:
+            if ses.done:
                 break
             
-        self.scores = self.ses.get_scores()
+        self.scores = ses.get_scores()
             
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
@@ -81,8 +81,10 @@ class GeneticAlgo:
         population_sorted = [self.population[i] for i in sorted_indices] 
         scores_sorted = [self.scores[i] for i in sorted_indices] 
         
-        self.bestPilots = population_sorted[:int(POPULATION * SURVIVAL_RATE)] # take the 10% bests pilots
-        self.bestscores = scores_sorted[:int(POPULATION * SURVIVAL_RATE)]  # take the 10% bests scores
+        self.survival_prop = int(POPULATION * SURVIVAL_RATE) # 50
+        
+        self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
+        self.bestscores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
         print([round(x, 2) for x in self.bestscores])
                 
@@ -93,20 +95,32 @@ class GeneticAlgo:
         
         self.new_population = cp.copy(self.bestPilots) # 10% best pilots
         
+        threshold = int((POPULATION - self.survival_prop) / 2)
+        
         while len(self.new_population) < POPULATION:
-            parent1, parent2 = self.select_parents()
-            baby = parent1.mate(parent2)
-            baby.mutate()
+            if len(self.new_population) < threshold:
+                parent1, parent2 = self.select_parents_bests()
+                baby = parent1.mate(parent2)
+                baby.mutate()
+            else:
+                parent1, parent2 = self.select_parents_pop()
+                baby = parent1.mate(parent2)
+                baby.mutate()
+                
             self.new_population.append(baby)
         
         self.population = self.new_population
         
     
-    def select_parents(self):
-        """Select two pilots with high scores."""
-        total_scores = sum(self.bestscores)
-        ratios = [f / total_scores for f in self.bestscores]
-        return rd.choices(self.bestPilots, weights=ratios, k=2) # return a k-sized list
+    def select_parents_bests(self):
+        """Select two pilots among best ones."""
+        return rd.choices(self.bestPilots, k=2) # return a k-sized list 
+    
+    def select_parents_pop(self):
+        """Select two pilots in population with high scores for diversity."""
+        total_scores = sum(self.scores)
+        ratios = [f / total_scores for f in self.scores]
+        return rd.choices(self.population, weights=ratios, k=2) 
 
 
 
@@ -146,6 +160,7 @@ if __name__ == "__main__":
 
 
 
+# Convergence à la 4e génération
 
 # Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ? 
 
