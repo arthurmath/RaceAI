@@ -4,8 +4,8 @@ import random as rd
 
 
 SEED = 42
-MUTATION_RATE = 0.5
-STD_MUTATION = 0.3
+MUTATION_RATE = 0.9
+STD_MUTATION = 1 #0.5
 NN_LAYERS = [5, 6, 6, 4]
 
 
@@ -45,9 +45,12 @@ class Pilot:
             
     
     def predict(self, vector):
-        for weight, bias in zip(self.weights, self.bias):
+        for i, (weight, bias) in enumerate(zip(self.weights, self.bias)):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
-            vector = self.heaviside(vector)
+            if i == len(self.weights):
+                vector = self.relu(vector)
+            else:
+                vector = self.heaviside(vector)
         return vector
     
     def relu(self, x):

@@ -8,17 +8,16 @@ from pathlib import Path
 import copy as cp
 
 
-
+SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
 N_EPISODES = 20
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
-    
-# Autres paramètres :
-# nombre de layers NN
-# fonctions activation 
+rd.seed(SEED)
+
+
 
 
 
@@ -59,13 +58,15 @@ class GeneticAlgo:
             actions = [mat.tolist()[0] for mat in actions]
             actions = [[j for j, act in enumerate(action) if act] for action in actions]
         
-            states, self.scores = self.ses.step(actions)
+            states = self.ses.step(actions)
             
             # print("STATES :", states)
             # print("ACTIONS : ", actions)
             
             if self.ses.done:
                 break
+            
+        self.scores = self.ses.get_scores()
             
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
@@ -146,3 +147,6 @@ if __name__ == "__main__":
 
 
 
+# Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ? 
+
+# Mes reward favorisent les pilotes à avancer peu car ceux qui vont vitent meurent vite

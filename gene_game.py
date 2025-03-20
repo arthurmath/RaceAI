@@ -12,6 +12,10 @@ import pygame as pg
 
 
 
+
+WHITE = (255, 255, 255)
+
+
     
 class Car:
     def __init__(self, ses): 
@@ -29,6 +33,7 @@ class Car:
         self.car_img = ses.car_img
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect()
+        self.font = pg.font.Font(pg.font.match_font('arial'), 16)
         
         self.collision = 0
         self.compteur = 0 # pour les collisions
@@ -96,13 +101,17 @@ class Car:
         
 
 
-    def draw(self, ses):
+    def draw(self, ses, i):
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
+        
+        # Affichage progression 
+        text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
+        ses.screen.blit(text_surface1, (self.x, self.y))
         
 
     
@@ -290,10 +299,9 @@ class Score:
     
 
     def draw(self, ses): 
-        WHITE = (255, 255, 255)
         
         # affichage du timer
-        text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
+        text = f"Temps écoulé : {self.temps_ecoule:.2f}s"
         text_surface = self.font.render(text, True, WHITE)
         text_rect = text_surface.get_rect()
         text_rect.topleft = (10, 800)
@@ -328,7 +336,7 @@ class Session:
         
         self.width = 1200
         self.height = 900
-        self.fps = 60
+        self.fps = 30
         
         pg.init()
         self.clock = pg.time.Clock()
@@ -377,9 +385,9 @@ class Session:
     
     def draw(self):
         self.background.draw(self, self.car_list[0])
-        for car in self.car_list:
+        for i, car in enumerate(self.car_list):
             if car.alive:
-                car.draw(self)
+                car.draw(self, i)
         self.score.draw(self)
         pg.display.flip()
 
@@ -396,9 +404,9 @@ class Session:
             self.done = True
             
         self.states = self.get_states()
-        self.update_scores()
+        self.scores = self.get_scores()
 
-        return self.states, self.scores
+        return self.states
 
 
     def get_states(self):
@@ -407,25 +415,14 @@ class Session:
         return self.states    
 
         
-    def update_scores(self):
+    def get_scores(self):
         for i, car in enumerate(self.car_list):
-            if car.alive:
-                self.scores[i] += 10 * (car.progression - car.old_progression)
-                car.old_progression = car.progression
-
-                # reward = car.progression / 100
-                
-                self.scores[i] -= 0.1 # pénalise l’inaction
-
-                # if car.collision:
-                    # reward -= 0.5
-                # if self.car.progression >= 10:
-                    # reward += 10
-                    
-            else:
-                self.scores[i] -= 10
-
+            self.scores[i] = car.progression
             
+            if not car.alive:
+                self.scores[i] -= 100
+
+        return self.scores
     
     
 
@@ -453,7 +450,7 @@ if __name__ == '__main__':
         # actions = [agent.predict(states).tolist()[0][0]]
         ###############
         
-        states, scores = ses.step(actions)
+        states = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
     
     
@@ -463,3 +460,26 @@ if __name__ == '__main__':
     
     
     
+
+
+
+
+
+# def update_scores(self):
+#     for i, car in enumerate(self.car_list):
+#         if car.alive:
+#             diff = car.progression - car.old_progression
+#             # self.scores[i] += 10 * diff
+#             # car.old_progression = car.progression
+
+#             self.scores[i] = car.progression
+#             if abs(diff) <= 1e-4:
+#                 self.scores[i] -= 1 # pénalise l’inaction
+
+#             # if car.collision:
+#                 # reward -= 0.5
+#             # if self.car.progression >= 10:
+#                 # reward += 10
+                
+#         else:
+#             self.scores[i] -= 100

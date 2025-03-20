@@ -2,6 +2,8 @@ envRaceAI
 env311
 sandbox
 
+.venv
+venv
 
 __pycache__
 .idea

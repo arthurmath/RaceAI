@@ -14,29 +14,34 @@ ratios = [0.90, 0.1, 0.1]
 
 
 
-actions = [[False, False, True, False], [True, False, True, False]]
+# actions = [[False, False, True, False], [True, False, True, False]]
 
-actions = [[i if act else -1 for i, act in enumerate(action)] for action in actions]
-actions = [[x for x in action if x != -1] for action in actions]
+# actions = [[i if act else -1 for i, act in enumerate(action)] for action in actions]
+# actions = [[x for x in action if x != -1] for action in actions]
 
-print(actions)
-
-
-actions = [[False, False, True, False], [True, False, True, False]]
-
-
-# acts = []
-# for i, action in enumerate(actions):
-#     acts.append([])
-#     for j, act in enumerate(action):
-#         if act:
-#             acts[i].append(j)
-
-actions = [[j for j, act in enumerate(action) if act] for action in actions]
-
-print(actions)
-
-
-
-# actions = [np.random.choice(np.arange(1, 5), p=[3/6, 1/6, 1/6, 1/6], size=1) for _ in range(3)]
 # print(actions)
+
+
+# actions = [[False, False, True, False], [True, False, True, False]]
+
+
+# # acts = []
+# # for i, action in enumerate(actions):
+# #     acts.append([])
+# #     for j, act in enumerate(action):
+# #         if act:
+# #             acts[i].append(j)
+
+# actions = [[j for j, act in enumerate(action) if act] for action in actions]
+
+# print(actions)
+
+
+
+
+
+
+
+
+actions = [[0]] * 32
+print(actions)
