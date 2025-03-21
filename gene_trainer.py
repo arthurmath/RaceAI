@@ -28,6 +28,8 @@ class GeneticAlgo:
         self.best_scores = []
         self.avg_scores = []
         
+        self.ses = Session(display=True, nb_cars=POPULATION)
+        
         self.population = [Pilot() for _ in range(POPULATION)]
 
         for self.generation in range(N_EPISODES):
@@ -51,7 +53,7 @@ class GeneticAlgo:
     def evaluate_generation(self):
         self.scores = []
             
-        self.ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
+        self.ses.reset(self.generation)
         states = self.ses.get_states()
 
         for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
@@ -68,7 +70,6 @@ class GeneticAlgo:
                 break
             
         self.scores = self.ses.get_scores()
-            
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
         self.best_scores.append(self.bestGenScore)
@@ -101,11 +102,11 @@ class GeneticAlgo:
         
         while len(self.new_population) < POPULATION:
             if len(self.new_population) < threshold:
-                parent1, parent2 = self.select_parents_bests()
+                parent1, parent2 = self.select_parents_bests() # blue
                 baby = parent1.mate(parent2)
                 baby.mutate()
             else:
-                parent1, parent2 = self.select_parents_pop()
+                parent1, parent2 = self.select_parents_pop() # green
                 baby = parent1.mate(parent2)
                 baby.mutate()
                 
@@ -144,11 +145,11 @@ if __name__ == "__main__":
     
     
     if not algo.ses.quit:
-        # Save weights and biases of the best snake
-        PATH = Path("results_gene/weights")
-        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+        # # Save weights and biases of the best pilot
+        # PATH = Path("results_gene/weights")
+        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
         # Show graph of scores
         plt.plot(algo.best_scores, label='Best scores')
@@ -172,6 +173,9 @@ if __name__ == "__main__":
 
 
 
+
+
+# Base : mut_rate=0.9, cross_layer, std_mut = 0.5
 
 # mutation_rate = 0.1
 # Generation 1, average score: 0.65, best score: 5.66
@@ -208,3 +212,51 @@ if __name__ == "__main__":
 # Generation 8, average score: 2.43, best score: 13.83
 # Generation 9, average score: 2.16, best score: 13.88
 # Generation 10, average score: 2.40, best score: 13.85
+
+# cross_layer2
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.28, best score: 5.26
+# Generation 3, average score: 1.48, best score: 5.32
+# Generation 4, average score: 1.85, best score: 8.77
+# Generation 5, average score: 2.04, best score: 7.82
+# Generation 6, average score: 2.11, best score: 7.55
+# Generation 7, average score: 2.30, best score: 10.47
+# Generation 8, average score: 2.18, best score: 8.45
+# Generation 9, average score: 2.08, best score: 7.16
+# Generation 10, average score: 2.36, best score: 11.40
+
+# std_mutation = 0.1
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.92, best score: 7.83
+# Generation 3, average score: 2.17, best score: 8.16
+# Generation 4, average score: 2.47, best score: 8.04
+# Generation 5, average score: 2.55, best score: 7.92
+# Generation 6, average score: 2.59, best score: 8.36
+# Generation 7, average score: 2.62, best score: 8.44
+# Generation 8, average score: 2.68, best score: 8.52
+# Generation 9, average score: 2.74, best score: 8.57
+# Generation 10, average score: 2.77, best score: 10.46
+
+# std_mutation = 0.2
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.86, best score: 5.54
+# Generation 3, average score: 2.17, best score: 7.59
+# Generation 4, average score: 2.35, best score: 13.80
+# Generation 5, average score: 2.42, best score: 13.81
+# Generation 6, average score: 2.65, best score: 15.83
+# Generation 7, average score: 2.65, best score: 15.81
+# Generation 8, average score: 2.74, best score: 15.79
+# Generation 9, average score: 2.61, best score: 15.77
+# Generation 10, average score: 2.59, best score: 15.76
+
+# # std_mutation = 0.3
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.90, best score: 7.89
+# Generation 3, average score: 2.17, best score: 9.18
+# Generation 4, average score: 2.27, best score: 9.11
+# Generation 5, average score: 2.33, best score: 9.02
+# Generation 6, average score: 2.44, best score: 9.03
+# Generation 7, average score: 2.56, best score: 9.48
+# Generation 8, average score: 2.50, best score: 9.46
+# Generation 9, average score: 2.47, best score: 9.44
+# Generation 10, average score: 2.71, best score: 9.40

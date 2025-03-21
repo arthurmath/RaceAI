@@ -10,8 +10,13 @@ import pygame as pg
 
 
 
-
+FPS = 30
+WIDTH = 1200
+HEIGHT = 900
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+
 
 
     
@@ -109,8 +114,16 @@ class Car:
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
         
+        # print(i)
+        
         # Affichage progression 
-        text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
+        if i in range(51):
+            # print(i)
+            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
+        if i in range(51, 226):
+            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
+        else:
+            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
         
 
@@ -317,27 +330,16 @@ class Score:
 
 
 class Session:        
-    def __init__(self, nb_cars, display=True, gen=0):
+    def __init__(self, nb_cars, display=True):
         self.display = display
-        self.nb_pilots = nb_cars
-        self.nb_alive = nb_cars
-        self.done = False
-        self.quit = False
-        self.generation = gen
-        self.scores = [0] * self.nb_pilots
-        
-        self.width = 1200
-        self.height = 900
-        self.fps = 30
+        self.nb_cars = nb_cars
         
         pg.init()
         self.clock = pg.time.Clock()
-        self.screen = pg.display.set_mode((self.width, self.height))
+        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption('Race AI')
 
         self.load_images()
-        self.generate_objects()
-
 
     def load_images(self):
         self.car_img = pg.image.load('media/car.png').convert_alpha()
@@ -354,26 +356,36 @@ class Session:
         self.border_img = pg.transform.scale(self.border_img, (img_width, img_height))
         
         self.background_img = pg.image.load('media/background.jpg').convert()
-        self.background_img = pg.transform.scale(self.background_img, (self.width, self.height))
+        self.background_img = pg.transform.scale(self.background_img, (WIDTH, HEIGHT))
 
         self.finish_img = pg.image.load('media/finish.png').convert_alpha()
         img_width, img_height = self.finish_img.get_size()
         self.finish_img = pg.transform.scale(self.finish_img, (img_width * 0.78 , img_height * 0.78))
         
+    def reset(self, gen):
+        self.nb_pilots = self.nb_cars
+        self.nb_alive = self.nb_cars
+        self.done = False
+        self.quit = False
+        self.generation = gen
+        self.scores = [0] * self.nb_pilots
+        
+        self.generate_objects()
+    
     def generate_objects(self):
         self.car_list = [Car(self) for _ in range(self.nb_pilots)]
         self.background = Background(self)
         self.score = Score(self.background, self)        
         
-        
     def update(self, actions):
+        # print(len(self.car_list))
         for idx, car in enumerate(self.car_list):
             if len(actions) != 0:
                 car.update(actions[idx])
         self.nb_alive = sum([car.alive for car in self.car_list])
         self.background.update(self.car_list)
         self.score.update(self.car_list)
-        self.clock.tick(self.fps)
+        self.clock.tick(FPS)
     
     def draw(self):
         self.background.draw(self, self.car_list[0])
@@ -413,7 +425,10 @@ class Session:
             self.scores[i] = car.progression
             
             # if not car.alive:
-            #     self.scores[i] -= 100
+            #     self.scores[i] -= 1
+            
+            # if car.progression < 1:
+            #     self.scores[i] -= 10
 
         return self.scores
     

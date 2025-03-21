@@ -7,7 +7,7 @@ import pickle
 
 SEED = 42
 MUTATION_RATE = 0.9
-STD_MUTATION = 0.5
+STD_MUTATION = 0.2
 NN_LAYERS = [5, 6, 6, 4]
 
 
