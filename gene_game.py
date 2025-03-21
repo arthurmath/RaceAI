@@ -118,11 +118,10 @@ class Car:
         
         # Affichage progression 
         if i in range(51):
-            # print(i)
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        if i in range(51, 226):
+        elif i in range(51, 226):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        else:
+        elif i in range(226, 500):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
         
@@ -362,7 +361,7 @@ class Session:
         img_width, img_height = self.finish_img.get_size()
         self.finish_img = pg.transform.scale(self.finish_img, (img_width * 0.78 , img_height * 0.78))
         
-    def reset(self, gen):
+    def reset(self, gen=1):
         self.nb_pilots = self.nb_cars
         self.nb_alive = self.nb_cars
         self.done = False
@@ -431,12 +430,12 @@ class Session:
             #     self.scores[i] -= 10
 
         return self.scores
-    
-    
 
-        
-    
-    
+
+
+
+
+
 
 if __name__ == '__main__':
     
@@ -444,6 +443,7 @@ if __name__ == '__main__':
     
     if agent:
         ses = Session(nb_cars=1)
+        ses.reset()
         states = ses.get_states()
         
         PATH = Path("results_gene/weights")
@@ -455,6 +455,7 @@ if __name__ == '__main__':
     else:
         nb_cars = 100
         ses = Session(nb_cars)
+        ses.reset()
         states = ses.get_states()
     
     

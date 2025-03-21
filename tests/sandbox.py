@@ -48,7 +48,7 @@ ratios = [0.90, 0.1, 0.1]
 
 
 
-i = 2
+i = 0
 print(i)
 if i in range(10):
     print(range(10))
