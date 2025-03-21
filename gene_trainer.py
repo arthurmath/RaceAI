@@ -36,37 +36,38 @@ class GeneticAlgo:
             self.bests_survives()
             self.change_generation()
             
-            # if self.ses.done:
-            #     break
+            if self.ses.quit:
+                break
             
             print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}")
             
-        self.evaluate_generation() # Evaluate the last generation
-        self.bests_survives()
-        self.bestPilotEver = self.bestPilots[0]
+        if not self.ses.quit:
+            self.evaluate_generation() # Evaluate the last generation
+            self.bests_survives()
+            self.bestPilotEver = self.bestPilots[0]
         
 
 
     def evaluate_generation(self):
         self.scores = []
             
-        ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
-        states = ses.get_states()
+        self.ses = Session(display=True, nb_cars=POPULATION, gen=self.generation)
+        states = self.ses.get_states()
 
         for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
             
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
             actions = [mat.tolist()[0] for mat in actions]
         
-            states = ses.step(actions)
+            states = self.ses.step(actions)
             
             # print("STATES :", states)
             # print("ACTIONS : ", actions)
             
-            if ses.done:
+            if self.ses.done:
                 break
             
-        self.scores = ses.get_scores()
+        self.scores = self.ses.get_scores()
             
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
@@ -142,21 +143,20 @@ if __name__ == "__main__":
     
     
     
-    # Save weights and biases of the best snake
-    PATH = Path("results_gene/weights")
-    n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-    with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-        pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
-        
-        
+    if not algo.ses.quit:
+        # Save weights and biases of the best snake
+        PATH = Path("results_gene/weights")
+        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
-    # Show graph of progressions
-    plt.plot(algo.best_scores, label='Best scores')
-    plt.plot(algo.avg_scores, label='Average scores')
-    plt.xlabel("Générations")
-    plt.ylabel("Scores (%)")
-    plt.legend()
-    plt.show()
+        # Show graph of scores
+        plt.plot(algo.best_scores, label='Best scores')
+        plt.plot(algo.avg_scores, label='Average scores')
+        plt.xlabel("Générations")
+        plt.ylabel("Scores (%)")
+        plt.legend()
+        plt.show()
         
             
             

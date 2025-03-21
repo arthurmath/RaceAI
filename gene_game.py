@@ -324,6 +324,7 @@ class Session:
         self.nb_pilots = nb_cars
         self.nb_alive = nb_cars
         self.done = False
+        self.quit = False
         self.generation = gen
         self.scores = [0] * self.nb_pilots
         
@@ -389,6 +390,7 @@ class Session:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.done = True
+                self.quit = True
         
         self.update(actions)
         self.draw()
