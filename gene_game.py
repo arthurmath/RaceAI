@@ -6,8 +6,6 @@ import library as lib
 from pathlib import Path
 from gene_pilot import Pilot
 import pickle
-
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame as pg
 
 

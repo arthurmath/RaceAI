@@ -3,11 +3,10 @@ import copy as cp
 import random as rd
 from pathlib import Path
 import pickle
-import os
 
 
 SEED = 42
-MUTATION_RATE = 0.5
+MUTATION_RATE = 0.9
 STD_MUTATION = 0.5
 NN_LAYERS = [5, 6, 6, 4]
 

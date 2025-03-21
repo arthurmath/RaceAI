@@ -1,3 +1,5 @@
+import os
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame as pg
 
 def projection_betw_cp (starting_cp, ending_cp, position_to_proj) :

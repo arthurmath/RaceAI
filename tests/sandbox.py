@@ -2,6 +2,7 @@ import math
 import numpy as np
 import time
 import random as rd
+import os
 
 
 
@@ -37,10 +38,16 @@ ratios = [0.90, 0.1, 0.1]
 # print(actions)
 
 
-nb_cars = 4
+# nb_cars = 4
 
-actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
-print(actions)
-actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions]
+# actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
+# print(actions)
+# actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions]
 
-print(actions)
+# print(actions)
+
+
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import pygame as pg
+pg.init()

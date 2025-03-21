@@ -11,7 +11,7 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 7 # 20
+N_EPISODES = 10 # 20
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
@@ -88,7 +88,7 @@ class GeneticAlgo:
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.bestscores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
-        print([round(x, 2) for x in self.bestscores])
+        # print([round(x, 2) for x in self.bestscores])
                 
 
                 
@@ -168,3 +168,43 @@ if __name__ == "__main__":
 # Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ??
 
 # Mes reward favorisent les pilotes à avancer peu car ceux qui vont vitent meurent vite
+
+
+
+
+
+# mutation_rate = 0.1
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.92, best score: 7.20
+# Generation 3, average score: 2.33, best score: 7.16
+# Generation 4, average score: 2.41, best score: 8.98
+# Generation 5, average score: 2.61, best score: 9.17
+# Generation 6, average score: 2.66, best score: 9.03
+# Generation 7, average score: 2.82, best score: 8.87
+# Generation 8, average score: 2.91, best score: 8.80
+# Generation 9, average score: 2.79, best score: 8.76
+# Generation 10, average score: 3.00, best score: 9.09
+
+# mutation_rate = 0.5
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.78, best score: 7.98
+# Generation 3, average score: 2.11, best score: 9.34
+# Generation 4, average score: 2.20, best score: 9.45
+# Generation 5, average score: 2.28, best score: 9.53
+# Generation 6, average score: 2.41, best score: 8.00
+# Generation 7, average score: 2.44, best score: 8.74
+# Generation 8, average score: 2.45, best score: 8.57
+# Generation 9, average score: 2.33, best score: 8.39
+# Generation 10, average score: 2.35, best score: 8.37
+
+# mutation_rate = 0.9
+# Generation 1, average score: 0.65, best score: 5.66
+# Generation 2, average score: 1.65, best score: 7.16
+# Generation 3, average score: 1.92, best score: 7.62
+# Generation 4, average score: 2.17, best score: 7.69
+# Generation 5, average score: 2.40, best score: 9.17
+# Generation 6, average score: 2.21, best score: 13.74
+# Generation 7, average score: 2.43, best score: 13.77
+# Generation 8, average score: 2.43, best score: 13.83
+# Generation 9, average score: 2.16, best score: 13.88
+# Generation 10, average score: 2.40, best score: 13.85
