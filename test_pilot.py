@@ -78,7 +78,7 @@ class Pilot:
     
     def crossover(self, dna1, dna2):
         """ Performs a crosover on the layers (weights and biases) """
-        res = [ self.cross_layer(dna1[layer], dna2[layer]) for layer in range(len(dna1)) ]
+        res = [self.cross_layer(dna1[layer], dna2[layer]) for layer in range(len(dna1))]
         return res
 
     def cross_layer(self, layer1, layer2): # better
@@ -137,15 +137,16 @@ if __name__ == '__main__':
     pilot1 = Pilot(coef=1)
     pilot2 = Pilot(coef=2)
 
-    # action1 = pilot1.predict(state)
-    # print(action1.tolist()[0])
+    action1 = pilot1.predict(state)
+    print(action1.tolist()[0])
     
-    # action2 = pilot2.predict(state)
-    # print(action2.tolist()[0])
+    action2 = pilot2.predict(state)
+    print(action2.tolist()[0])
     
     baby = pilot1.mate(pilot2)
     
     print(baby.weights)
+    
     print()
     baby.mutate()
     print(baby.weights)

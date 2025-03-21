@@ -11,7 +11,7 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 20
+N_EPISODES = 7 # 20
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
@@ -25,7 +25,8 @@ class GeneticAlgo:
 
     def train(self):
         
-        self.list_scores = []
+        self.best_scores = []
+        self.avg_scores = []
         
         self.population = [Pilot() for _ in range(POPULATION)]
 
@@ -40,9 +41,9 @@ class GeneticAlgo:
             
             print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}")
             
-        # self.evaluate_generation() # Evaluate the last generation
-        # self.bests_survives()
-        # self.bestPilotEver = self.bestPilots[-1]
+        self.evaluate_generation() # Evaluate the last generation
+        self.bests_survives()
+        self.bestPilotEver = self.bestPilots[0]
         
 
 
@@ -56,7 +57,6 @@ class GeneticAlgo:
             
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
             actions = [mat.tolist()[0] for mat in actions]
-            actions = [[j for j, act in enumerate(action) if act] for action in actions]
         
             states = ses.step(actions)
             
@@ -70,7 +70,8 @@ class GeneticAlgo:
             
         self.bestGenScore = max(self.scores)
         self.avgGenScore = sum(self.scores) / POPULATION
-        self.list_scores.append(self.bestGenScore)
+        self.best_scores.append(self.bestGenScore)
+        self.avg_scores.append(self.avgGenScore)
         
 
             
@@ -137,31 +138,33 @@ if __name__ == "__main__":
     algo = GeneticAlgo()
     algo.train()
     
-    print(f"\nBests scores total: {sum(algo.list_scores):.2f}\n")
+    print(f"\nBests scores total: {sum(algo.best_scores):.2f}\n")
     
     
     
-    # # Save the weights and biases of the snakes for the new game scores
-    # files = os.listdir(Path("weights"))
-    # n_train = len(files) # nb de fichiers dans dossier weights
-    # with open(Path("weights") / Path(f"{n_train}.weights"), "wb") as f: # write binary
-    #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+    # Save weights and biases of the best snake
+    PATH = Path("results_gene/weights")
+    n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+    with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+        pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
         
         
     
-    # # Show graph of progressions
-    # plt.plot(algo.list_scores)
-    # plt.xlabel("Générations")
-    # plt.ylabel("Progression (%)")
-    # plt.show()
+    # Show graph of progressions
+    plt.plot(algo.best_scores, label='Best scores')
+    plt.plot(algo.avg_scores, label='Average scores')
+    plt.xlabel("Générations")
+    plt.ylabel("Scores (%)")
+    plt.legend()
+    plt.show()
         
             
             
 
 
 
-# Convergence à la 4e génération
 
-# Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ? 
+
+# Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ??
 
 # Mes reward favorisent les pilotes à avancer peu car ceux qui vont vitent meurent vite

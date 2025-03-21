@@ -1,6 +1,9 @@
 import numpy as np
 import copy as cp
 import random as rd
+from pathlib import Path
+import pickle
+import os
 
 
 SEED = 42
@@ -41,7 +44,7 @@ class Pilot:
         self.bias = []
         for layer in self.weights:
             nb_bias = layer.shape[1]
-            self.bias.append(np.array([rd.uniform(-1, 1) for _ in range(nb_bias)])) # rd.gauss(0, 0.5)
+            self.bias.append(np.matrix([rd.uniform(-1, 1) for _ in range(nb_bias)])) # rd.gauss(0, 0.5)
             
     
     def predict(self, vector):
@@ -77,7 +80,7 @@ class Pilot:
     
     def crossover(self, dna1, dna2):
         """ Performs a crosover on the layers (weights and biases) """
-        res = [ self.cross_layer(dna1[layer], dna2[layer]) for layer in range(len(dna1)) ]
+        res = [self.cross_layer(dna1[layer], dna2[layer]) for layer in range(len(dna1))]
         return res
 
     def cross_layer(self, layer1, layer2): # better
@@ -104,7 +107,7 @@ class Pilot:
             for i in range(layer1.shape[0]):
                 for j in range(layer1.shape[1]):
                     if rd.random() > 0.5:
-                        res[i][j] = layer2[i][j]
+                        res[i, j] = layer2[i, j]
         return res
     
 
@@ -121,7 +124,7 @@ class Pilot:
         mask = np.random.rand(*layer.shape) < MUTATION_RATE # Tableau de True et False
         mutations = np.clip(np.random.normal(0, STD_MUTATION, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations) 
-        return layer
+        return np.matrix(layer)
 
     
     
@@ -130,18 +133,32 @@ class Pilot:
     
 if __name__ == '__main__':
     
-    state = [-1.0, -0.34, -0.73, -0.1, 0.8]
+    state = [1.0, 0.9, -0.73, -0.1, 0.5]
 
     pilot1 = Pilot()
-    pilot2 = Pilot()
 
     action1 = pilot1.predict(state)
     print(action1.tolist()[0])
     
-    action2 = pilot2.predict(state)
-    print(action2.tolist()[0])
+    PATH = Path("results_gene/weights")
+    with open(PATH / Path(f"test.weights"), "wb") as f: # write binary
+        pickle.dump((pilot1.weights, pilot1.bias), f)
+        
+    with open(PATH / Path(f"test.weights"), "rb") as f:
+        weights, bias = pickle.load(f)
+        agent = Pilot(weights, bias)
+        
+    action1 = agent.predict(state)
+    print(action1.tolist()[0])
     
-    baby = pilot1.mate(pilot2)
+    
+    
+    # pilot2 = Pilot()
+    # action2 = pilot2.predict(state)
+    # print(action2.tolist()[0])
+    
+    # pilot2.mutate()
+    # baby = pilot1.mate(pilot2)
     
     
     

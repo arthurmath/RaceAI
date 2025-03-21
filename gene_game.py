@@ -67,18 +67,20 @@ class Car:
         
         moves = ['U', 'D', 'L', 'R']      
         
-        actions = [moves[action] for action in actions]
+        # actions : [1, 0, 0, 1]
+        actions = [j for j, act in enumerate(actions) if act] # [0, 4]
+        actions = [moves[action] for action in actions] # ['U', 'R']
         
         if 'L' in actions:
             self.angle = (self.angle + self.rotation_speed) % 360
         if 'R' in actions:
             self.angle = (self.angle - self.rotation_speed) % 360
         if 'U' in actions:
-            moved = True
             self.speed = min(self.speed + self.acceleration, self.max_speed)
-        if 'D' in actions:
             moved = True
+        if 'D' in actions:
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
+            moved = True
                 
 
         if not moved: # inertie
@@ -228,7 +230,6 @@ class Car:
         
 
 
-
 class Background:
     def __init__(self, ses):
         self.back = ses.background_img
@@ -304,21 +305,21 @@ class Score:
         text = f"Temps écoulé : {self.temps_ecoule:.2f}s"
         text_surface = self.font.render(text, True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.topleft = (10, 800)
+        text_rect.topleft = (60, 800)
         ses.screen.blit(text_surface, text_rect)
         
         # affichage high score
-        text1 = f"Generation : {self.ses.generation}"
+        text1 = f"Generation : {self.ses.generation+1}"
         text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
-        text_rect1.topleft = (10, 780)
+        text_rect1.topleft = (60, 780)
         ses.screen.blit(text_surface1, text_rect1)
         
         # affichage population
         text2 = f"Population : {self.ses.nb_alive}"
         text_surface2 = self.font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
-        text_rect2.topleft = (10, 760)
+        text_rect2.topleft = (60, 760)
         ses.screen.blit(text_surface2, text_rect2)
         
 
@@ -326,7 +327,7 @@ class Score:
 
 
 class Session:        
-    def __init__(self, nb_cars, display=True, gen=1):
+    def __init__(self, nb_cars, display=True, gen=0):
         self.display = display
         self.nb_pilots = nb_cars
         self.nb_alive = nb_cars
@@ -432,23 +433,29 @@ class Session:
 
 if __name__ == '__main__':
     
-    nb_cars = 100
+    agent = True
     
-    ses = Session(nb_cars)
-    states = ses.get_states()
+    if agent:
+        ses = Session(nb_cars=1)
+        states = ses.get_states()
+        
+        PATH = Path("results_gene/weights")
+        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        with open(PATH / Path(f"12.weights"), "rb") as f:
+            weights, bias = pickle.load(f)
+            agent = Pilot(weights, bias)
+        
+    else:
+        nb_cars = 100
+        ses = Session(nb_cars)
+        states = ses.get_states()
+    
     
     while not ses.done:
-        ### RANDOM ###
-        actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
-        ###############
-        
-        ### AGENT ###
-        # n_train = len(os.listdir(Path("weights"))) # nb de fichiers dans dossier weights
-        # with open(Path("results_gene/weights") / Path(f"{n_train-1}.weights"), "rb") as f:
-        #     weights, bias = pickle.load(f)
-        #     agent = Pilot(weights, bias)
-        # actions = [agent.predict(states).tolist()[0][0]]
-        ###############
+        if agent:
+            actions = [agent.predict(states).tolist()[0]]
+        else:
+            actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
         
         states = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
