@@ -37,11 +37,10 @@ ratios = [0.90, 0.1, 0.1]
 # print(actions)
 
 
+nb_cars = 4
 
+actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
+print(actions)
+actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions]
 
-
-
-
-
-actions = [[0]] * 32
 print(actions)

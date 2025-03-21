@@ -220,12 +220,6 @@ class Car:
         progression = (self.traveled_distance/self.total_distance)*100
         return min(max(progression, 0) ,100)
     
-
-    def reset(self):
-        self.x, self.y = self.initial_pos
-        self.speed = 0
-        self.angle = 0
-        
         
         
 
@@ -291,11 +285,9 @@ class Score:
                 if self.temps_ecoule < self.high_score: # si le temps realisé est meilleur que l'ancien record
                     if self.temps_ecoule > 15: # pour ne pas sauvegarder les marches arrières sur le finish
                         self.high_score = self.temps_ecoule 
-                        with open("results_gene/times.txt", "a") as file:
+                        with open("results_gene/times.txt", "a") as file: # append
                             file.write(f"{self.high_score:.3f}\n")
-                    
-                self.start_ticks = pg.time.get_ticks() # reset timer
-                car.reset()
+
                 self.update_high_score()
     
 
@@ -305,21 +297,21 @@ class Score:
         text = f"Temps écoulé : {self.temps_ecoule:.2f}s"
         text_surface = self.font.render(text, True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.topleft = (60, 800)
+        text_rect.topleft = (60, 770)
         ses.screen.blit(text_surface, text_rect)
         
         # affichage high score
         text1 = f"Generation : {self.ses.generation+1}"
         text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
-        text_rect1.topleft = (60, 780)
+        text_rect1.topleft = (60, 750)
         ses.screen.blit(text_surface1, text_rect1)
         
         # affichage population
         text2 = f"Population : {self.ses.nb_alive}"
         text_surface2 = self.font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
-        text_rect2.topleft = (60, 760)
+        text_rect2.topleft = (60, 730)
         ses.screen.blit(text_surface2, text_rect2)
         
 
@@ -455,7 +447,8 @@ if __name__ == '__main__':
         if agent:
             actions = [agent.predict(states).tolist()[0]]
         else:
-            actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
+            actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)] # [[2], [0]]
+            actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions] # [[0, 0, 1, 0], [1, 0, 0, 0]]]
         
         states = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
