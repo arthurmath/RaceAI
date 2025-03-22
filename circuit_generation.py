@@ -1,6 +1,9 @@
 import numpy as np
 import random as rd
 import pygame as pg
+
+
+
 class Circuit:
     def __init__(self,):
         #ajouter width et height
@@ -35,7 +38,7 @@ class Circuit:
         self.first_angle = rd.choice(self.angle)
         self.elements.append([self.first_pos, self.first_angle,0])
 
-        while self.diff_counter < self.difficulty :
+        # while self.diff_counter < self.difficulty :
 
 
 

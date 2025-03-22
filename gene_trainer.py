@@ -11,9 +11,13 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 10 # 20
+N_EPISODES = 50 
 N_STEPS = 100    
 EPISODE_INCREASE = 2
+
+MUTATION_RATE = 0.9
+MR_MIN = 0.2
+MR_FACTOR = int(N_EPISODES * 5 / 6) 
 
 rd.seed(SEED)
 
@@ -104,11 +108,13 @@ class GeneticAlgo:
             if len(self.new_population) < threshold:
                 parent1, parent2 = self.select_parents_bests() # blue
                 baby = parent1.mate(parent2)
-                baby.mutate()
+                mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
+                print("Mutation rate : ", mutation_rate)
+                baby.mutate(mutation_rate)
             else:
                 parent1, parent2 = self.select_parents_pop() # green
                 baby = parent1.mate(parent2)
-                baby.mutate()
+                baby.mutate(MUTATION_RATE)
                 
             self.new_population.append(baby)
         
@@ -165,10 +171,6 @@ if __name__ == "__main__":
 
 
 
-
-# Pourquoi les meilleurs pilotes ne performent pas aussi bien à la génération suivante ??
-
-# Mes reward favorisent les pilotes à avancer peu car ceux qui vont vitent meurent vite
 
 
 
