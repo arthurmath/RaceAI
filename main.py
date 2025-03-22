@@ -1,7 +1,7 @@
 import pygame as pg
 import pickle
-from game import Session
-from trainer import GeneticAlgo
+from gene_game import Session
+from gene_trainer import GeneticAlgo
 from pathlib import Path
 from os import listdir
 

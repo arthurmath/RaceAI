@@ -1,16 +1,15 @@
-import pygame as pg
 import sys
 import os
 import math
 import time
-from pilot import Pilot, Adn
+from gene_pilot import Pilot, Adn
 from pathlib import Path
 import pickle
 import numpy as np
 import library as lib
 
-
-
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import pygame as pg
 
     
 class Car:
@@ -34,7 +33,7 @@ class Car:
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
                             (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
                             (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
-                            (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
+                            (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436), (239, 270)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -114,54 +113,31 @@ class Car:
             pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
-        
-
-    
-    
-    # def get_progression(self):
-    #     """ Calcule l'avancée de la voiture sur le circuit """
-
-    #     distance_parcourue = 0
-    #     for i in range(len(self.checkpoints) - 1):
-    #         if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
-    #             # Si la voiture est entre deux checkpoints
-    #             distance_parcourue += math.dist(self.checkpoints[i], (self.x, self.y))
-    #             break
-    #         else:
-    #             # Sinon on ajoute la distance entre les 2 derniers checkpoints
-    #             distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
-
-    #     progression = (distance_parcourue / self.total_distance) * 100
-    #     return min(max(progression, 0), 100)
+        # ses.screen.blit(lib.show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
     
     
     
     def get_progression(self):
-        """ Calcule l'avancée de la voiture sur le circuit : distance parcourue et checkpoints"""
+        """ Calcule l'avancée de la voiture sur le circuit """
 
-        #La variable validate checkpoint permet, sur un cercle approximé centré sur le checkpoint, de valider la prise de checkpoint peu importe le sens
+        #La variable validate_checkpoint permet, sur un cercle centré sur le checkpoint, de valider la prise de checkpoint peu importe le sens
         current_position = (self.x, self.y)
-        checkpoint_progress = False
 
         for i, checkpoint in enumerate(self.checkpoints) :
             
             #Calcul de la distance entre la voiture et le checkpoint d'avant et d'après
             dist = math.dist((self.x, self.y), checkpoint)
 
-            "Note pour l'aide à la compréhension de la fonction"
             """A un instant t :
                 self.validate_checkpoint - 1 : checkpoint actuel
                 self.validate_checkpoint : checkpoint suivant
                 self.validate_checkpoint - 2 : checkpoint précédent"""
 
             if dist <= self.checkpoints_radius and i == self.validate_checkpoint - 1 : #On ne veut pas revalider un checkpoint déjà pris
-                # print(f'Warning ! Going past the current cp {i+1} ')
                 self.in_checkpoint = True
                 break
 
             if (dist <= self.checkpoints_radius and i == self.validate_checkpoint) : #Validation du checkpoint d'après
-
                 self.validate_checkpoint += 1 #le prochain checkpoint à valider sera le self.validate_checkpoint + 1 
                 self.validate_checkpoint = min(self.validate_checkpoint, len(self.checkpoints)) #Pour éviter une éventuelle erreur dans la boucle
                 self.in_checkpoint = False
@@ -177,17 +153,12 @@ class Car:
                 self.in_checkpoint = False
         
         if self.validate_checkpoint > 0:
-
-            current_checkpoint = self.checkpoints[self.validate_checkpoint- 1]
-            next_checkpoint = self.checkpoints[self.validate_checkpoint]
-            prev_checkpoint = self.checkpoints[self.validate_checkpoint - 2]
-            "POUR FORWARD "
-            #vecteur entre current et previous pos ((prevpos, currentpos))
-            vect_curr_prev = np.array([current_position[0] - self.previous_pos[0], current_position[1] - self.previous_pos[1]])
-
-            #vect entre cp actuel et suivant 
-            vect_curr_next_cp = - np.array([current_checkpoint[0] - next_checkpoint[0], current_checkpoint[1] - next_checkpoint[1]])
-            "FIN POUR FORWARD "
+            try:
+                current_checkpoint = self.checkpoints[self.validate_checkpoint- 1]
+                next_checkpoint = self.checkpoints[self.validate_checkpoint]
+                prev_checkpoint = self.checkpoints[self.validate_checkpoint - 2]
+            except:
+                return 0
 
             "POUR CALCUL DE LA DISTANCE PARCOURUE"
             # Position projetée de la voiture sur la droite current cp -> next cp
@@ -201,20 +172,16 @@ class Car:
 
             "POUR SAVOIR SI ON EST DERRIERE LE DERNIER CHECKPOINT VALIDE"
             # Positions projetées
-            #projection sur x et y de la voiture
-            #Sur x
-            coord_curr_pos_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_position)[0]
-            #Sur y 
-            coord_curr_pos_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_position)[1]
+            # projection sur x et y de la voiture
+            coord_curr_pos_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_position)[0] #Sur x
+            coord_curr_pos_y = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_position)[1] #Sur y 
             #Projection du current cp
-            #Sur x
-            coord_curr_cp_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[0]
-            #Sur y
-            coord_curr_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[1]
+            coord_curr_cp_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[0] #Sur x 
+            coord_curr_cp_y = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, current_checkpoint)[1] #Sur y 
             #Projection du next cp
-            coord_next_cp_x = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[0]
-            #Sur y
-            coord_next_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[1]
+            coord_next_cp_x = lib.ortho_projection(self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[0] #Sur x 
+            coord_next_cp_y = lib.ortho_projection (self.ortho_sys_x, self.ortho_sys_y, next_checkpoint)[1] #Sur y 
+            
             #Maintenant que nous avons les projections de la voiture, du current cp et du next cp dans la base, traçons les vecteurs
             #Voiture avec curr cp
             vect_car_curr_cp_x = np.array([coord_curr_pos_x[0] - coord_curr_cp_x[0], coord_curr_pos_x[1] - coord_curr_cp_x[1]])
@@ -235,33 +202,24 @@ class Car:
             "FIN POUR SAVOIR SI ON EST DERRIERE LE DERNIER CHECKPOINT VALIDE"
 
             if self.speed != 0 :
-                forward = 1 if np.dot(vect_curr_next_cp, vect_curr_prev) > 0 else -1
-                #print(forward)
-                dist_to_current_cp = math.dist(current_checkpoint, (projected_x_current, projected_y_current))
                 
-                # print(out_of_reach_cp, dist_to_current_cp, behind_cp, np.dot(vect_car_curr_cp, vect_curr_next_cp))
                 if (self.behind_cp == True) and ((self.validate_checkpoint - 1 > 0) == True) :
                     
                     segment_distance = abs(math.dist(prev_checkpoint, (projected_x_prev, projected_y_prev)))
-                    #print('OK1')
                     self.traveled_distance = abs(sum([math.dist(self.checkpoints[checked], self.checkpoints[checked + 1]) for checked in range(self.validate_checkpoint -2 )]) + segment_distance)
                 else :
                     segment_distance = abs(math.dist(current_checkpoint, (projected_x_current, projected_y_current)))
-
                     self.traveled_distance = abs(sum([math.dist(self.checkpoints[checked], self.checkpoints[checked + 1]) for checked in range(self.validate_checkpoint -1 )]) + segment_distance)
 
                     # Mettre à jour la distance parcourue
 
                 self.last_traveled_distance = self.traveled_distance
             else :
-                forward = 0
                 self.traveled_distance = self.last_traveled_distance
 
-        # print(forward)
         progression = (self.traveled_distance/self.total_distance)*100
         return min(max(progression, 0) ,100)
     
-
 
         
     def reset(self):
@@ -283,7 +241,7 @@ class Background:
         self.finish = ses.finish_img
         self.border_pos = (170, -10)
         self.border_mask = pg.mask.from_surface(self.border)
-        # self.border_mask_img = show_mask(self.border)
+        # self.border_mask_img = lib.show_mask(self.border)
         self.finish_rect = self.finish.get_rect(topleft=(200, 330)) # on crée un rect pour la ligne d'arrivée
         
     def update(self, car):
@@ -320,7 +278,7 @@ class Score:
         
     def update_high_score(self):
         """ Met à jour high_score avec le meilleur temps du fichier """
-        with open("times.txt", "r") as f:
+        with open("results_gene/times.txt", "r") as f:
             self.high_score = min(float(line) for line in f)
     
             
@@ -377,15 +335,6 @@ class Session:
         self.width = 1200
         self.height = 900
         self.fps = 30
-        
-        # Hide pygame prints
-        os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-        #f = open("/dev/null", "w") #pour lancement sur mac
-          # Assurez-vous que le module os est importé
-        #f = open(os.devnull, "w")
-
-        #os.dup2(f.fileno(), 2)
-        #f.close()
                 
         pg.init()
         self.clock = pg.time.Clock()
@@ -396,7 +345,7 @@ class Session:
             self.start_train = time.time()
             self.fps = 70 # faster training
             
-        # self.music()
+        self.music()
         self.load_images()
         self.generate_objects()
 
@@ -433,7 +382,7 @@ class Session:
         self.score = Score(self.background, self.car)
         
         if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
-            with open(Path("weights") / Path(self.agent), "rb") as f:
+            with open(Path("results_gene/weights") / Path(self.agent), "rb") as f:
                 weights, bias = pickle.load(f)
                 self.agent = Pilot(Adn(weights, bias))
             self.fps = 70 
@@ -474,34 +423,8 @@ class Session:
 
 
 if __name__ == '__main__':
-    
-    def show_mask(img): #(chatgpt)
-        # Créer une surface noire de la taille du masque
-        mask = pg.mask.from_surface(img)
-        mask_surface = pg.Surface(mask.get_size(), flags=pg.SRCALPHA)
-        mask_surface.fill((0, 0, 0, 0))  # Transparence
-
-        # Parcourir les pixels du masque et colorier en blanc les pixels actifs
-        for x in range(mask.get_size()[0]):
-            for y in range(mask.get_size()[1]):
-                if mask.get_at((x, y)):  # Si le pixel est actif (valeur 1)
-                    mask_surface.set_at((x, y), (255, 255, 255, 255))  # Blanc
-
-        return mask_surface
-
-
-    
-    
-    # print("\nQui joue au jeu ? \n 1 : Humain \n 2 : IA\n")
-    # player = int(input("Entrez votre choix (1 ou 2) : "))
-    
-    player = 2
-    
-    if player == 1:
-        agent = None
-    else:
-        agent = "94.67.pilot"  # TODO changer fps à 70 si agent
-    
+        
+    agent = None
     train = False
     display = True
     training_time = None
@@ -557,14 +480,30 @@ if __name__ == '__main__':
 
 
 
-    #if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-        #pos = pg.mouse.get_pos()
-        #self.checkpoints_fin.append(pos)
-        #with open("checkpoints", "a") as file:
-        #    file.write(f"{self.checkpoints_fin}\n")
-        #print({pos})
-        
-        
-        
-        
-        
+#if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+    #pos = pg.mouse.get_pos()
+    #self.checkpoints_fin.append(pos)
+    #with open("checkpoints", "a") as file:
+    #    file.write(f"{self.checkpoints_fin}\n")
+    #print({pos})
+    
+    
+    
+    
+
+
+# def get_progression(self):
+#     """ Calcule l'avancée de la voiture sur le circuit """
+
+#     distance_parcourue = 0
+#     for i in range(len(self.checkpoints) - 1):
+#         if math.dist((self.x, self.y), self.checkpoints[i]) < math.dist(self.checkpoints[i], self.checkpoints[i + 1]):
+#             # Si la voiture est entre deux checkpoints
+#             distance_parcourue += math.dist(self.checkpoints[i], (self.x, self.y))
+#             break
+#         else:
+#             # Sinon on ajoute la distance entre les 2 derniers checkpoints
+#             distance_parcourue += math.dist(self.checkpoints[i], self.checkpoints[i + 1])
+
+#     progression = (distance_parcourue / self.total_distance) * 100
+#     return min(max(progression, 0), 100)

@@ -1,0 +1,8 @@
+pygame
+pathlib
+numpy
+matplotlib
+tensorflow
+jax
+pygad
+pandas

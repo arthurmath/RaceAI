@@ -1,46 +1,54 @@
 import math
 import numpy as np
 import time
-import multiprocessing as mp
-import matplotlib.pyplot as plt
 import random as rd
-
-
-
-
-# def my_agent(x):
-#     return x*x
-
-# import inspect
-# import os
-
-# def write_agent_to_file(function, file):
-#     """ copie le code de fonction dans le file """
-#     with open(file, "a" if os.path.exists(file) else "w") as f:
-#         f.write(inspect.getsource(function))
-#         print(function, "written to", file)
-
-# write_agent_to_file(my_agent, "submission.py")
+import os
 
 
 
 population = [1, 2, 3]
 ratios = [0.90, 0.1, 0.1]
 
-population = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0002770454230382389, 0.046711341388100014, 0.47155452878089]
-ratios = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0005342767487661691, 0.09008191990197952, 0.9093838033492543]
 
-for _ in range(10):
-    print(rd.choices(population, weights=ratios, k=2))
+# for _ in range(10):
+#     print(rd.choices(population, weights=ratios, k=2))
 
 
 
+# actions = [[False, False, True, False], [True, False, True, False]]
+
+# actions = [[i if act else -1 for i, act in enumerate(action)] for action in actions]
+# actions = [[x for x in action if x != -1] for action in actions]
+
+# print(actions)
+
+
+# actions = [[False, False, True, False], [True, False, True, False]]
+
+
+# # acts = []
+# # for i, action in enumerate(actions):
+# #     acts.append([])
+# #     for j, act in enumerate(action):
+# #         if act:
+# #             acts[i].append(j)
+
+# actions = [[j for j, act in enumerate(action) if act] for action in actions]
+
+# print(actions)
+
+
+# nb_cars = 4
+
+# actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)]
+# print(actions)
+# actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions]
+
+# print(actions)
 
 
 
-
-
-
-
-
-
+i = 0
+print(i)
+if i in range(10):
+    print(range(10))
