@@ -6,7 +6,6 @@ import pickle
 
 
 SEED = 42
-STD_MUTATION = 0.2
 NN_LAYERS = [5, 6, 6, 4]
 
 
@@ -116,11 +115,11 @@ class Pilot:
             self.bias[i] = self.mutate_layer(layer, mutation_rate)
             
 
-    def mutate_layer(self, layer, mutation_rate):
-        """ Add a value from a gaussian distribution of mean 0 and standard deviation of STD_MUTATION """
+    def mutate_layer(self, layer, mutation_rate, std_mutation):
+        """ Add a value from a gaussian distribution of mean 0 and standard deviation of std_mutation """
         
         mask = np.random.rand(*layer.shape) < mutation_rate # Tableau de True et False
-        mutations = np.clip(np.random.normal(0, STD_MUTATION, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
+        mutations = np.clip(np.random.normal(0, std_mutation, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations) 
         return np.matrix(layer)
 

@@ -448,7 +448,7 @@ if __name__ == '__main__':
         
         PATH = Path("results_gene/weights")
         n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"12.weights"), "rb") as f:
+        with open(PATH / Path(f"17.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
         

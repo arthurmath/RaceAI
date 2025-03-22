@@ -15,9 +15,10 @@ N_EPISODES = 100
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
+STD_MUTATION = 0.2
 MUTATION_RATE = 0.9
-MR_MIN = 0.3
-MR_FACTOR = int(N_EPISODES * 5 / 6) 
+MR_MIN = 0.1
+MR_FACTOR = int(N_EPISODES * 1) 
 
 rd.seed(SEED)
 
@@ -106,15 +107,18 @@ class GeneticAlgo:
         threshold = int((POPULATION - self.survival_prop) / 2)
         
         while len(self.new_population) < POPULATION:
-            # if len(self.new_population) < threshold:
-            parent1, parent2 = self.select_parents_bests() # blue
-            baby = parent1.mate(parent2)
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
-            baby.mutate(self.mutation_rate)
-            # else:
-            #     parent1, parent2 = self.select_parents_pop() # green
-            #     baby = parent1.mate(parent2)
-            #     baby.mutate(MUTATION_RATE)
+            
+            if len(self.new_population) < threshold:
+                parent1, parent2 = self.select_parents_bests() # blue
+                baby = parent1.mate(parent2)
+                baby.mutate(self.mutation_rate, STD_MUTATION)
+            else:
+                # parent1, parent2 = self.select_parents_pop() # green
+                # baby = parent1.mate(parent2)
+                # baby.mutate(MUTATION_RATE)
+                baby = rd.choices(self.bestPilots[:5])
+                baby.mutate(self.mutation_rate - 0.2, 0.1)
                 
             self.new_population.append(baby)
         
@@ -262,3 +266,10 @@ if __name__ == "__main__":
 # Generation 8, average score: 2.50, best score: 9.46
 # Generation 9, average score: 2.47, best score: 9.44
 # Generation 10, average score: 2.71, best score: 9.40
+
+
+
+# Entrainement avec select_best only : best score meilleur : 25.5%, avg : 9.68
+# Avoir un mutation rate petit augmente l'average score mais diminue le best score
+# Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
+# Etre plus elitiste : prendre le meilleur et lui appliquer des toute petites mutations

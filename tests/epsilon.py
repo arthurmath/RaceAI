@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 
 
 
-NUM_EPISODES = 600
+NUM_EPISODES = 100
 
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = int(NUM_EPISODES * 2 / 5)
 
-EPS_MIN = 0.1
-EPS_FACTOR = int(NUM_EPISODES * 5 / 6) 
+EPS_MIN = 0.3
+EPS_FACTOR = int(NUM_EPISODES * 1.1) 
 
 
 epsilon1 = []
