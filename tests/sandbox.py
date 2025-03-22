@@ -5,6 +5,7 @@ import random as rd
 import os
 
 
+print(mp.cpu_count())
 
 population = [1, 2, 3]
 ratios = [0.90, 0.1, 0.1]

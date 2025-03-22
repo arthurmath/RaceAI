@@ -1,6 +1,8 @@
 import random as rd
 import pickle
 import os
+import matplotlib
+matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
 import matplotlib.pyplot as plt
 from gene_pilot import Pilot
 from gene_game import Session
