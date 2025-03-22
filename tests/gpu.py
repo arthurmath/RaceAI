@@ -4,6 +4,17 @@ import timeit
 np.random.seed(42)
 
 
+### Lignes Jean ###
+
+# import matplotlib
+# matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
+
+###
+
+
+
+
+
 size = 100
 print("start\n")
 
