@@ -19,8 +19,9 @@ epsilon1 = []
 epsilon2 = []
 
 for episode in range(NUM_EPISODES):
-     epsilon1.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY))
-     epsilon2.append(max(1 - episode / EPS_FACTOR, EPS_MIN))
+    print(episode)
+    epsilon1.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY))
+    epsilon2.append(max(1 - episode / EPS_FACTOR, EPS_MIN))
 
 
 plt.figure(figsize=(8, 4))

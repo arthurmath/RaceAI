@@ -111,9 +111,9 @@ class Pilot:
 
     def mutate(self, mutation_rate):
         for i, layer in enumerate(self.weights):
-            self.weights[i] = self.mutate_layer(layer)
+            self.weights[i] = self.mutate_layer(layer, mutation_rate)
         for i, layer in enumerate(self.bias):
-            self.bias[i] = self.mutate_layer(layer)
+            self.bias[i] = self.mutate_layer(layer, mutation_rate)
             
 
     def mutate_layer(self, layer, mutation_rate):

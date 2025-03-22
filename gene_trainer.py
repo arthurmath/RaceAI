@@ -1,8 +1,6 @@
 import random as rd
 import pickle
 import os
-import matplotlib
-matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
 import matplotlib.pyplot as plt
 from gene_pilot import Pilot
 from gene_game import Session
@@ -13,7 +11,7 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 50 
+N_EPISODES = 10
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
@@ -111,7 +109,7 @@ class GeneticAlgo:
                 parent1, parent2 = self.select_parents_bests() # blue
                 baby = parent1.mate(parent2)
                 mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
-                print("Mutation rate : ", mutation_rate)
+                print("Mutation rate : ", mutation_rate, self.generation)
                 baby.mutate(mutation_rate)
             else:
                 parent1, parent2 = self.select_parents_pop() # green

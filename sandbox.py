@@ -1,20 +1,23 @@
 import numpy as np
 import math
-import matplotlib
-matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
 import matplotlib.pyplot as plt
 
 
 
-l = np.array([-0.615651859682504, -0.39348659288627863, 0.040000000000000036, 0.8999999999999999, -1.0, -1.0])
+N_EPISODES = 2
+N_STEPS = 100    
+EPISODE_INCREASE = 2
 
-# print(l[:, np.newaxis])
+MUTATION_RATE = 0.9
+MR_MIN = 0.2
+MR_FACTOR = int(N_EPISODES * 5 / 6) 
 
 
-best_scores = np.arange(0, 100, 1)
-plt.plot(best_scores, label='Best scores')
-#plt.plot(algoavg_scores, label='Average scores')
-plt.xlabel("Générations")
-plt.ylabel("Scores (%)")
-plt.legend()
-plt.show()
+
+
+for generation in range(N_EPISODES):
+    mutation_rate = max(1 - generation / MR_FACTOR, MR_MIN)
+
+    print(mutation_rate)
+
+
