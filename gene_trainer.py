@@ -11,12 +11,12 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 10
+N_EPISODES = 100
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
 MUTATION_RATE = 0.9
-MR_MIN = 0.2
+MR_MIN = 0.3
 MR_FACTOR = int(N_EPISODES * 5 / 6) 
 
 rd.seed(SEED)
@@ -31,6 +31,7 @@ class GeneticAlgo:
         
         self.best_scores = []
         self.avg_scores = []
+        self.mutation_rate = 1
         
         self.ses = Session(display=True, nb_cars=POPULATION)
         
@@ -45,7 +46,7 @@ class GeneticAlgo:
             if self.ses.quit:
                 break
             
-            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}")
+            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}, mutation rate: {self.mutation_rate:.2f}")
             
         if not self.ses.quit:
             self.evaluate_generation() # Evaluate the last generation
@@ -105,16 +106,15 @@ class GeneticAlgo:
         threshold = int((POPULATION - self.survival_prop) / 2)
         
         while len(self.new_population) < POPULATION:
-            if len(self.new_population) < threshold:
-                parent1, parent2 = self.select_parents_bests() # blue
-                baby = parent1.mate(parent2)
-                mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
-                print("Mutation rate : ", mutation_rate, self.generation)
-                baby.mutate(mutation_rate)
-            else:
-                parent1, parent2 = self.select_parents_pop() # green
-                baby = parent1.mate(parent2)
-                baby.mutate(MUTATION_RATE)
+            # if len(self.new_population) < threshold:
+            parent1, parent2 = self.select_parents_bests() # blue
+            baby = parent1.mate(parent2)
+            self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
+            baby.mutate(self.mutation_rate)
+            # else:
+            #     parent1, parent2 = self.select_parents_pop() # green
+            #     baby = parent1.mate(parent2)
+            #     baby.mutate(MUTATION_RATE)
                 
             self.new_population.append(baby)
         
@@ -151,11 +151,11 @@ if __name__ == "__main__":
     
     
     if not algo.ses.quit:
-        # # Save weights and biases of the best pilot
-        # PATH = Path("results_gene/weights")
-        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+        # Save weights and biases of the best pilot
+        PATH = Path("results_gene/weights")
+        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
         # Show graph of scores
         plt.plot(algo.best_scores, label='Best scores')
