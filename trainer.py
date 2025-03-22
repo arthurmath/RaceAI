@@ -165,7 +165,7 @@ class GeneticAlgo:
     def run_pilot(self, pilot): 
         """ Fonction exécutée dans un processus séparé pour chaque pilote. """
         
-        ses = Session(train=True, agent=pilot, display=True, training_time=self.generation)
+        ses = Session(train=True, agent=pilot, display=False, training_time=self.generation)
         ses.run()
         
         fitness = pilot.compute_fitness(ses.car)
