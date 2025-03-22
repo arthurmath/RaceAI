@@ -1,14 +1,7 @@
 import sys
-import os
 import math
-import time
-from gene_pilot import Pilot, Adn
-from pathlib import Path
-import pickle
 import numpy as np
 import library as lib
-
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame as pg
 
     
@@ -47,6 +40,28 @@ class Car:
         self.ortho_sys_x = ((300, 130), (400, 130))
         self.behind_cp = False
         self.in_checkpoint = False
+        
+        self.lines = [((300, 40), (300, 650), (0, 0, 255)),
+         ((200, 130), (400, 130), (255, 0, 255)),
+         ((320, 390), (520, 390), (0, 0, 255)),
+         ((420, 150), (420, 500), (0, 0, 255)),
+         ((530, 30), (530, 400), (0, 0, 255)),
+         ((440, 125), (1030, 125), (0, 0, 255)),
+         ((940, 40), (940, 320), (0, 0, 255)),
+         ((620, 240), (1050, 240), (0, 0, 255)),
+         ((680, 240), (680, 440), (0, 0, 255)),
+         ((570, 340), (1000, 340), (0, 0, 255)),
+         ((600, 440), (1030, 440), (0, 0, 255)),
+         ((940, 360), (940, 840), (0, 0, 255)),
+         ((800, 750), (1030, 750), (0, 0, 255)),
+         ((890, 600), (890, 840), (0, 0, 255)),
+         ((580, 580), (870, 580), (0, 0, 255)),
+         ((780, 490), (780, 770), (0, 0, 255)),
+         ((680, 490), (680, 770), (0, 0, 255)),
+         ((570, 570), (570, 840), (0, 0, 255)),
+         ((170, 370), (620, 820), (0, 0, 255)),
+         ]
+
 
         
         
@@ -58,19 +73,16 @@ class Car:
         
         moves = []
         
-        if ses.agent == None: 
-            keys = pg.key.get_pressed()
-            if keys[pg.K_LEFT]:
-                moves.append('L')
-            if keys[pg.K_RIGHT]:
-                moves.append('R')
-            if keys[pg.K_UP]:
-                moves.append('U')
-            if keys[pg.K_DOWN]:
-                moves.append('D')
-        else:
-            moves = ses.agent.choose_next_move(self)
-                    
+        keys = pg.key.get_pressed()
+        if keys[pg.K_LEFT]:
+            moves.append('L')
+        if keys[pg.K_RIGHT]:
+            moves.append('R')
+        if keys[pg.K_UP]:
+            moves.append('U')
+        if keys[pg.K_DOWN]:
+            moves.append('D')
+                
                     
         if 'L' in moves:
             self.angle = (self.angle + self.rotation_speed) % 360
@@ -114,6 +126,10 @@ class Car:
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(lib.show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
+        
+        
+        for start, end, color in self.lines:
+            pg.draw.line(ses.screen, color, start, end, 2)
     
     
     
@@ -301,21 +317,21 @@ class Score:
         WHITE = (255, 255, 255)
         
         # affichage du timer
-        text = f"Temps écoulé : {self.temps_ecoule:.3f}s"
+        text = f"Temps écoulé : {self.temps_ecoule:.2f}s"
         text_surface = self.font.render(text, True, WHITE)
         text_rect = text_surface.get_rect()
         text_rect.topleft = (10, 800)
         ses.screen.blit(text_surface, text_rect)
         
         # affichage high score
-        text1 = f"Meilleur temps : {self.high_score:.3f}s"
+        text1 = f"Meilleur temps : {self.high_score:.2f}s"
         text_surface1 = self.font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
         text_rect1.topleft = (10, 780)
         ses.screen.blit(text_surface1, text_rect1)
         
         # affichage progression
-        text2 = f"Progression : {car.progression:.3f}%"
+        text2 = f"Progression : {car.progression:.2f}%"
         text_surface2 = self.font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
         text_rect2.topleft = (10, 760)
@@ -326,11 +342,7 @@ class Score:
 
 
 class Session:        
-    def __init__(self, train, agent, display, training_time):
-        self.train = train
-        self.agent = agent
-        self.display = display
-        self.training_time = training_time
+    def __init__(self):
         
         self.width = 1200
         self.height = 900
@@ -340,10 +352,6 @@ class Session:
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((self.width, self.height))
         pg.display.set_caption('Race AI')
-        
-        if train:
-            self.start_train = time.time()
-            self.fps = 70 # faster training
             
         self.music()
         self.load_images()
@@ -381,11 +389,6 @@ class Session:
         self.background = Background(self)
         self.score = Score(self.background, self.car)
         
-        if self.agent != None and self.train == False: # Si pas d'agent sélectionné et pas d'entrainement
-            with open(Path("results_gene/weights") / Path(self.agent), "rb") as f:
-                weights, bias = pickle.load(f)
-                self.agent = Pilot(Adn(weights, bias))
-            self.fps = 70 
             
         
         
@@ -409,12 +412,7 @@ class Session:
                     running = False
         
             self.update()
-            
-            if self.train:
-                if time.time() - self.start_train > self.training_time: # temps d'entrainement dépassé
-                    running = False
-            if self.display:
-                self.draw()
+            self.draw()
             
     
     
@@ -423,13 +421,8 @@ class Session:
 
 
 if __name__ == '__main__':
-        
-    agent = None
-    train = False
-    display = True
-    training_time = None
     
-    ses = Session(train, agent, display, training_time)
+    ses = Session()
     ses.run()
     
     pg.quit()
@@ -451,29 +444,7 @@ if __name__ == '__main__':
 
 
 
-# lines = [((300, 40), (300, 650), (0, 0, 255)),
-#          ((200, 130), (400, 130), (255, 0, 255)),
-#          ((320, 390), (520, 390), (0, 0, 255)),
-#          ((420, 150), (420, 500), (0, 0, 255)),
-#          ((530, 30), (530, 400), (0, 0, 255)),
-#          ((440, 125), (1030, 125), (0, 0, 255)),
-#          ((940, 40), (940, 320), (0, 0, 255)),
-#          ((620, 240), (1050, 240), (0, 0, 255)),
-#          ((680, 240), (680, 440), (0, 0, 255)),
-#          ((570, 340), (1000, 340), (0, 0, 255)),
-#          ((600, 440), (1030, 440), (0, 0, 255)),
-#          ((940, 360), (940, 840), (0, 0, 255)),
-#          ((800, 750), (1030, 750), (0, 0, 255)),
-#          ((890, 600), (890, 840), (0, 0, 255)),
-#          ((580, 580), (870, 580), (0, 0, 255)),
-#          ((780, 490), (780, 770), (0, 0, 255)),
-#          ((680, 490), (680, 770), (0, 0, 255)),
-#          ((570, 570), (570, 840), (0, 0, 255)),
-#          ((170, 370), (620, 820), (0, 0, 255)),
-#          ]
 
-# for start, end, color in lines:
-#     pg.draw.line(ses.screen, color, start, end, 2)
 
 
 
