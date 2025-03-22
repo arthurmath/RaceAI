@@ -119,9 +119,10 @@ class Car:
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        elif i in range(51, 226):
-            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        elif i in range(226, 500):
+        #elif i in range(51, 226):
+         #   text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
+        #elif i in range(226, 500):
+        else:
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
         

@@ -9,7 +9,7 @@ import copy as cp
 
 
 SEED = 42
-POPULATION = 500
+POPULATION = 1000
 SURVIVAL_RATE = 0.1
 N_EPISODES = 100
 N_STEPS = 100    
