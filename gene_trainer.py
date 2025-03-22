@@ -9,7 +9,7 @@ import copy as cp
 
 
 SEED = 42
-POPULATION = 1000
+POPULATION = 500
 SURVIVAL_RATE = 0.1
 N_EPISODES = 100
 N_STEPS = 100    
@@ -117,7 +117,8 @@ class GeneticAlgo:
                 # parent1, parent2 = self.select_parents_pop() # green
                 # baby = parent1.mate(parent2)
                 # baby.mutate(MUTATION_RATE)
-                baby = rd.choices(self.bestPilots[:5])
+                baby = rd.choices(self.bestPilots[:5])[0]
+
                 baby.mutate(self.mutation_rate - 0.2, 0.1)
                 
             self.new_population.append(baby)
