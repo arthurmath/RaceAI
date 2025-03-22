@@ -1,7 +1,7 @@
 import numpy as np
 import math
-import matplotlib
-matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
+#import matplotlib
+#matplotlib.use('Qt5Agg')  # ou matplotlib.use('TkAgg') #problème de compatibilité avec pycharm, mettre avant import pyplot
 import matplotlib.pyplot as plt
 
 
