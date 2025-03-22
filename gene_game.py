@@ -71,7 +71,7 @@ class Car:
         moves = ['U', 'D', 'L', 'R']      
         
         # actions : [1, 0, 0, 1]
-        actions = [j for j, act in enumerate(actions) if act] # [0, 4]
+        actions = [j for j, act in enumerate(actions) if act] # [0, 3]
         actions = [moves[action] for action in actions] # ['U', 'R']
         
         if 'L' in actions:
