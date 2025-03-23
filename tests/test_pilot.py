@@ -1,6 +1,8 @@
 import numpy as np
 import copy as cp
 import random as rd
+from pathlib import Path
+import pickle
 
 
 SEED = 42
@@ -152,8 +154,7 @@ if __name__ == '__main__':
     print(baby.weights)
     
     
-    
-    
+
     
     
     

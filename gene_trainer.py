@@ -10,9 +10,8 @@ import copy as cp
 
 SEED = 42
 POPULATION = 500
-POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 100
+N_EPISODES = 2 # 100
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
@@ -48,7 +47,7 @@ class GeneticAlgo:
             if self.ses.quit:
                 break
             
-            print(f"Generation {self.generation+1}, average score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}, mutation rate: {self.mutation_rate:.2f}")
+            print(f"Generation {self.generation+1}, avg score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}, mr: {self.mutation_rate:.2f}")
             
         if not self.ses.quit:
             self.evaluate_generation() # Evaluate the last generation
@@ -113,17 +112,17 @@ class GeneticAlgo:
             if len(self.new_population) < threshold:
                 parent1, parent2 = self.select_parents_bests() # blue
                 baby = parent1.mate(parent2)
-                baby.mutate(self.mutation_rate, STD_MUTATION)
+                baby.mutate(self.mutation_rate, std=0.1)
             else:
                 parent1, parent2 = self.select_parents_pop() # green
                 baby = parent1.mate(parent2)
-                baby.mutate(MUTATION_RATE)
+                baby.mutate(MUTATION_RATE, std=0.2)
                 # baby = rd.choices(self.bestPilots[:5])[0]
                 # baby.mutate(self.mutation_rate - 0.2, 0.1)
                 
             self.new_population.append(baby)
         
-        self.population = self.new_population
+        self.population = cp.copy(self.new_population)
         
     
     def select_parents_bests(self):
@@ -150,8 +149,6 @@ if __name__ == "__main__":
     
     algo = GeneticAlgo()
     algo.train()
-    
-    print(f"\nBests scores total: {sum(algo.best_scores):.2f}\n")
     
     
     
@@ -256,7 +253,7 @@ if __name__ == "__main__":
 # Generation 9, average score: 2.61, best score: 15.77
 # Generation 10, average score: 2.59, best score: 15.76
 
-# # std_mutation = 0.3
+# std_mutation = 0.3
 # Generation 1, average score: 0.65, best score: 5.66
 # Generation 2, average score: 1.90, best score: 7.89
 # Generation 3, average score: 2.17, best score: 9.18
@@ -272,6 +269,10 @@ if __name__ == "__main__":
 
 # Entrainement avec select_best only : best score meilleur : 25.5%, avg : 9.68
 # Avoir un mutation rate petit augmente l'average score mais diminue le best score
-# Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
 # Etre plus elitiste : prendre le meilleur et lui appliquer des toute petites mutations
 # BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2)
+
+# Améliorations : 
+# Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
+# Ne pas réévaluer les 50 meilleurs pilotes (inutile) mais les conserver dans une 2e liste. 
+# Save le meilleur pilot et récupérer le meme dans reload

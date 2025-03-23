@@ -1,8 +1,6 @@
 import numpy as np
 import copy as cp
 import random as rd
-from pathlib import Path
-import pickle
 
 
 SEED = 42
@@ -108,11 +106,11 @@ class Pilot:
         return res
     
 
-    def mutate(self, mutation_rate, std_mutation):
+    def mutate(self, mutation_rate, std):
         for i, layer in enumerate(self.weights):
-            self.weights[i] = self.mutate_layer(layer, mutation_rate, std_mutation)
+            self.weights[i] = self.mutate_layer(layer, mutation_rate, std)
         for i, layer in enumerate(self.bias):
-            self.bias[i] = self.mutate_layer(layer, mutation_rate, std_mutation)
+            self.bias[i] = self.mutate_layer(layer, mutation_rate, std)
             
 
     def mutate_layer(self, layer, mutation_rate, std_mutation):
@@ -123,39 +121,6 @@ class Pilot:
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations) 
         return np.matrix(layer)
 
-    
-    
-    
-    
-    
-if __name__ == '__main__':
-    
-    state = [1.0, 0.9, -0.73, -0.1, 0.5]
-
-    pilot1 = Pilot()
-
-    action1 = pilot1.predict(state)
-    print(action1.tolist()[0])
-    
-    PATH = Path("results_gene/weights")
-    with open(PATH / Path(f"test.weights"), "wb") as f: # write binary
-        pickle.dump((pilot1.weights, pilot1.bias), f)
-        
-    with open(PATH / Path(f"test.weights"), "rb") as f:
-        weights, bias = pickle.load(f)
-        agent = Pilot(weights, bias)
-        
-    action1 = agent.predict(state)
-    print(action1.tolist()[0])
-    
-    
-    
-    # pilot2 = Pilot()
-    # action2 = pilot2.predict(state)
-    # print(action2.tolist()[0])
-    
-    # pilot2.mutate()
-    # baby = pilot1.mate(pilot2)
     
     
     
