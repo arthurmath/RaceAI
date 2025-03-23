@@ -9,7 +9,7 @@ import copy as cp
 
 
 SEED = 42
-POPULATION = 1000
+POPULATION = 500
 SURVIVAL_RATE = 0.1
 N_EPISODES = 100
 N_STEPS = 100    
@@ -114,11 +114,11 @@ class GeneticAlgo:
                 baby = parent1.mate(parent2)
                 baby.mutate(self.mutation_rate, STD_MUTATION)
             else:
-                # parent1, parent2 = self.select_parents_pop() # green
-                # baby = parent1.mate(parent2)
-                # baby.mutate(MUTATION_RATE)
-                baby = rd.choices(self.bestPilots[:5])
-                baby.mutate(self.mutation_rate - 0.2, 0.1)
+                parent1, parent2 = self.select_parents_pop() # green
+                baby = parent1.mate(parent2)
+                baby.mutate(MUTATION_RATE)
+                # baby = rd.choices(self.bestPilots[:5])[0]
+                # baby.mutate(self.mutation_rate - 0.2, 0.1)
                 
             self.new_population.append(baby)
         
@@ -273,3 +273,4 @@ if __name__ == "__main__":
 # Avoir un mutation rate petit augmente l'average score mais diminue le best score
 # Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
 # Etre plus elitiste : prendre le meilleur et lui appliquer des toute petites mutations
+# BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2)
