@@ -11,8 +11,8 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 0 # 100
-N_STEPS = 100    
+N_EPISODES = 6 # 100
+N_STEPS = 80 # 100    
 EPISODE_INCREASE = 2
 
 STD_MUTATION = 0.2
@@ -54,7 +54,7 @@ class GeneticAlgo:
             self.bests_survives()
             self.bestPilotEver = self.bestPilots[0]
             
-            print(f"BEST SCORE : {self.bestscores[0]:.3f}")
+            # print(f"BEST SCORE : {self.bestscores[0]:.3f}")
             print(self.bestPilotEver)
         
 
@@ -62,7 +62,7 @@ class GeneticAlgo:
     def evaluate_generation(self):
         self.scores = []
         
-        self.generation = 1 # à supprimer (test generation=0)
+        # self.generation = 1 # à supprimer (test generation=0)
             
         self.ses.reset(self.generation)
         states = self.ses.get_states()
@@ -91,21 +91,38 @@ class GeneticAlgo:
     def bests_survives(self):
         
         sorted_indices = sorted(range(len(self.scores)), key=lambda i: self.scores[i], reverse=True)
-        print(sorted_indices)
+        # print(sorted_indices[:50])
         
         population_sorted = [self.population[i] for i in sorted_indices] 
         scores_sorted = [self.scores[i] for i in sorted_indices] 
-        print(scores_sorted)
+        # print([round(x, 2) for x in scores_sorted])
         
         self.survival_prop = int(POPULATION * SURVIVAL_RATE) # 50
         
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.bestscores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
-        print([round(x, 2) for x in self.bestscores])
-        print(self.bestPilots[0])
-        with open(Path("results_gene/weights") / Path(f"best.weights"), "wb") as f: # write binary
-            pickle.dump((algo.bestPilots[0].weights, algo.bestPilots[0].bias), f)
+        # print([round(x, 2) for x in self.bestscores])
+        # idx = 6
+        # print(self.population[idx])
+        # print(self.bestPilots[0])
+        
+        # import time
+        # ses = Session(display=True, nb_cars=1)
+        # ses.reset(self.generation)
+        # states = ses.get_states()
+        # for step in range(70):
+        #     # actions = [self.bestPilots[0].predict(states).tolist()[0]]
+        #     actions = [self.population[idx].predict(states).tolist()[0]]
+        #     states = ses.step(actions)
+        #     print(ses.get_scores()[0], ses.car_list[0].alive)
+        #     time.sleep(0)
+            
+        
+        
+        # with open(Path("results_gene/weights") / Path(f"best.weights"), "wb") as f: # write binary
+        #     pickle.dump((self.bestPilots[0].weights, self.bestPilots[0].bias), f)
+        #     # pickle.dump((self.population[idx].weights, self.population[idx].bias), f)
 
 
                 
@@ -162,12 +179,12 @@ if __name__ == "__main__":
     
     
     
-    # if not algo.ses.quit:
-        # # Save weights and biases of the best pilot
-        # PATH = Path("results_gene/weights")
-        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+    if not algo.ses.quit:
+        # Save weights and biases of the best pilot
+        PATH = Path("results_gene/weights")
+        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
         # # Show graph of scores
         # plt.plot(algo.best_scores, label='Best scores')

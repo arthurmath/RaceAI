@@ -380,7 +380,7 @@ class Session:
     def update(self, actions):
         # print(len(self.car_list))
         for idx, car in enumerate(self.car_list):
-            if len(actions) != 0:
+            if len(actions) != 0 and car.alive:
                 car.update(actions[idx])
         self.nb_alive = sum([car.alive for car in self.car_list])
         self.background.update(self.car_list)
@@ -451,7 +451,7 @@ if __name__ == '__main__':
         
         PATH = Path("results_gene/weights")
         n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"best.weights"), "rb") as f:
+        with open(PATH / Path(f"11.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
         
