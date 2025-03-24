@@ -11,7 +11,7 @@ import copy as cp
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 2 # 100
+N_EPISODES = 0 # 100
 N_STEPS = 100    
 EPISODE_INCREASE = 2
 
@@ -53,11 +53,16 @@ class GeneticAlgo:
             self.evaluate_generation() # Evaluate the last generation
             self.bests_survives()
             self.bestPilotEver = self.bestPilots[0]
+            
+            print(f"BEST SCORE : {self.bestscores[0]:.3f}")
+            print(self.bestPilotEver)
         
 
 
     def evaluate_generation(self):
         self.scores = []
+        
+        self.generation = 1 # à supprimer (test generation=0)
             
         self.ses.reset(self.generation)
         states = self.ses.get_states()
@@ -86,17 +91,22 @@ class GeneticAlgo:
     def bests_survives(self):
         
         sorted_indices = sorted(range(len(self.scores)), key=lambda i: self.scores[i], reverse=True)
+        print(sorted_indices)
         
         population_sorted = [self.population[i] for i in sorted_indices] 
         scores_sorted = [self.scores[i] for i in sorted_indices] 
+        print(scores_sorted)
         
         self.survival_prop = int(POPULATION * SURVIVAL_RATE) # 50
         
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.bestscores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
-        # print([round(x, 2) for x in self.bestscores])
-                
+        print([round(x, 2) for x in self.bestscores])
+        print(self.bestPilots[0])
+        with open(Path("results_gene/weights") / Path(f"best.weights"), "wb") as f: # write binary
+            pickle.dump((algo.bestPilots[0].weights, algo.bestPilots[0].bias), f)
+
 
                 
     def change_generation(self):
@@ -152,26 +162,25 @@ if __name__ == "__main__":
     
     
     
-    if not algo.ses.quit:
-        # Save weights and biases of the best pilot
-        PATH = Path("results_gene/weights")
-        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+    # if not algo.ses.quit:
+        # # Save weights and biases of the best pilot
+        # PATH = Path("results_gene/weights")
+        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
-        # Show graph of scores
-        plt.plot(algo.best_scores, label='Best scores')
-        plt.plot(algo.avg_scores, label='Average scores')
-        plt.xlabel("Générations")
-        plt.ylabel("Scores (%)")
-        plt.legend()
-        plt.show()
+        # # Show graph of scores
+        # plt.plot(algo.best_scores, label='Best scores')
+        # plt.plot(algo.avg_scores, label='Average scores')
+        # plt.xlabel("Générations")
+        # plt.ylabel("Scores (%)")
+        # plt.legend()
+        # plt.show()
         
              
             
 
-
-
+        
 
 
 
@@ -270,7 +279,7 @@ if __name__ == "__main__":
 # Entrainement avec select_best only : best score meilleur : 25.5%, avg : 9.68
 # Avoir un mutation rate petit augmente l'average score mais diminue le best score
 # Etre plus elitiste : prendre le meilleur et lui appliquer des toute petites mutations
-# BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2)
+# BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2) std-mutation inversé !! à refaire
 
 # Améliorations : 
 # Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 

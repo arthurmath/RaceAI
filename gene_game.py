@@ -333,6 +333,7 @@ class Session:
     def __init__(self, nb_cars, display=True):
         self.display = display
         self.nb_cars = nb_cars
+        self.quit = False
         
         pg.init()
         self.clock = pg.time.Clock()
@@ -366,7 +367,6 @@ class Session:
         self.nb_pilots = self.nb_cars
         self.nb_alive = self.nb_cars
         self.done = False
-        self.quit = False
         self.generation = gen
         self.scores = [0] * self.nb_pilots
         
@@ -403,7 +403,8 @@ class Session:
                 self.quit = True
         
         self.update(actions)
-        self.draw()
+        if self.display:
+            self.draw()
         
         if not any([car.alive for car in self.car_list]):
             self.done = True
@@ -450,7 +451,7 @@ if __name__ == '__main__':
         
         PATH = Path("results_gene/weights")
         n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"20.weights"), "rb") as f:
+        with open(PATH / Path(f"best.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
         
@@ -465,8 +466,8 @@ if __name__ == '__main__':
         if agent:
             actions = [agent.predict(states).tolist()[0]]
         else:
-            actions = [[np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6])] for _ in range(nb_cars)] # [[2], [0]]
-            actions = [[1 if i == action[0] else 0 for i in range(4)] for action in actions] # [[0, 0, 1, 0], [1, 0, 0, 0]]]
+            actions = [np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6]) for _ in range(nb_cars)] # [2, 0]
+            actions = [[1 if i == action else 0 for i in range(4)] for action in actions] # [[0, 0, 1, 0], [1, 0, 0, 0]]]
         
         states = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
