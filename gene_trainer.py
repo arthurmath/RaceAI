@@ -1,22 +1,22 @@
-import random as rd
-import pickle
-import os
 import matplotlib.pyplot as plt
 from gene_pilot import Pilot
 from gene_game import Session
 from pathlib import Path
 import copy as cp
+import random as rd
+import pickle
+import os
 
 
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 6 # 100
-N_STEPS = 80 # 100    
+N_EPISODES = 20
+N_STEPS = 80 
 EPISODE_INCREASE = 2
 
 STD_MUTATION = 0.2
-MUTATION_RATE = 0.9
+MUTATION_RATE = 0.1
 MR_MIN = 0.1
 MR_FACTOR = int(N_EPISODES * 1) 
 
@@ -47,22 +47,19 @@ class GeneticAlgo:
             if self.ses.quit:
                 break
             
-            print(f"Generation {self.generation+1}, avg score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}, mr: {self.mutation_rate:.2f}")
+            print(f"Generation {self.generation+1}, avg score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}") # , mr: {self.mutation_rate:.2f}
             
         if not self.ses.quit:
             self.evaluate_generation() # Evaluate the last generation
             self.bests_survives()
             self.bestPilotEver = self.bestPilots[0]
             
-            # print(f"BEST SCORE : {self.bestscores[0]:.3f}")
-            print(self.bestPilotEver)
+            # print(f"BEST SCORE : {self.best_scores[0]:.3f}")
         
 
 
     def evaluate_generation(self):
         self.scores = []
-        
-        # self.generation = 1 # à supprimer (test generation=0)
             
         self.ses.reset(self.generation)
         states = self.ses.get_states()
@@ -91,38 +88,14 @@ class GeneticAlgo:
     def bests_survives(self):
         
         sorted_indices = sorted(range(len(self.scores)), key=lambda i: self.scores[i], reverse=True)
-        # print(sorted_indices[:50])
         
         population_sorted = [self.population[i] for i in sorted_indices] 
         scores_sorted = [self.scores[i] for i in sorted_indices] 
-        # print([round(x, 2) for x in scores_sorted])
         
         self.survival_prop = int(POPULATION * SURVIVAL_RATE) # 50
         
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
-        self.bestscores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
-        
-        # print([round(x, 2) for x in self.bestscores])
-        # idx = 6
-        # print(self.population[idx])
-        # print(self.bestPilots[0])
-        
-        # import time
-        # ses = Session(display=True, nb_cars=1)
-        # ses.reset(self.generation)
-        # states = ses.get_states()
-        # for step in range(70):
-        #     # actions = [self.bestPilots[0].predict(states).tolist()[0]]
-        #     actions = [self.population[idx].predict(states).tolist()[0]]
-        #     states = ses.step(actions)
-        #     print(ses.get_scores()[0], ses.car_list[0].alive)
-        #     time.sleep(0)
-            
-        
-        
-        # with open(Path("results_gene/weights") / Path(f"best.weights"), "wb") as f: # write binary
-        #     pickle.dump((self.bestPilots[0].weights, self.bestPilots[0].bias), f)
-        #     # pickle.dump((self.population[idx].weights, self.population[idx].bias), f)
+        self.best_scores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
 
 
                 
@@ -131,21 +104,18 @@ class GeneticAlgo:
         
         self.new_population = cp.copy(self.bestPilots) # 10% best pilots
         
-        threshold = int((POPULATION - self.survival_prop) / 2)
+        # threshold = int((POPULATION - self.survival_prop) / 2)
         
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
-            if len(self.new_population) < threshold:
+            if len(self.new_population) < 400:
                 parent1, parent2 = self.select_parents_bests() # blue
                 baby = parent1.mate(parent2)
-                baby.mutate(self.mutation_rate, std=0.1)
+                baby.mutate(0.3, std=0.1)
             else:
-                parent1, parent2 = self.select_parents_pop() # green
-                baby = parent1.mate(parent2)
-                baby.mutate(MUTATION_RATE, std=0.2)
-                # baby = rd.choices(self.bestPilots[:5])[0]
-                # baby.mutate(self.mutation_rate - 0.2, 0.1)
+                baby = rd.choices(self.bestPilots[:5])[0] # green
+                baby.mutate(0.1, std=0.1)
                 
             self.new_population.append(baby)
         
@@ -154,7 +124,9 @@ class GeneticAlgo:
     
     def select_parents_bests(self):
         """Select two pilots among best ones."""
-        return rd.choices(self.bestPilots, k=2) # return a k-sized list 
+        total_scores = sum(self.best_scores)
+        ratios = [f / total_scores for f in self.best_scores]
+        return rd.choices(self.bestPilots, weights=ratios, k=2) # return a k-sized list 
     
     def select_parents_pop(self):
         """Select two pilots in population with high scores for diversity."""
@@ -179,12 +151,12 @@ if __name__ == "__main__":
     
     
     
-    if not algo.ses.quit:
-        # Save weights and biases of the best pilot
-        PATH = Path("results_gene/weights")
-        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+    # if not algo.ses.quit:
+        # # Save weights and biases of the best pilot
+        # PATH = Path("results_gene/weights")
+        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
         # # Show graph of scores
         # plt.plot(algo.best_scores, label='Best scores')
@@ -294,11 +266,10 @@ if __name__ == "__main__":
 
 
 # Entrainement avec select_best only : best score meilleur : 25.5%, avg : 9.68
-# Avoir un mutation rate petit augmente l'average score mais diminue le best score
-# Etre plus elitiste : prendre le meilleur et lui appliquer des toute petites mutations
-# BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2) std-mutation inversé !! à refaire
+# Avoir un mutation rate petit augmente l'average score mais diminue le best score final
+# Etre plus elitiste : prendre le meilleur et lui appliquer de toute petites mutations
+# BestPilots only et juste mutate : mauvais résultats (gen:50, avg:3, best:7.2) std_mutation inversé !! à refaire
 
 # Améliorations : 
 # Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
 # Ne pas réévaluer les 50 meilleurs pilotes (inutile) mais les conserver dans une 2e liste. 
-# Save le meilleur pilot et récupérer le meme dans reload

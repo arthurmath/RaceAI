@@ -114,15 +114,13 @@ class Car:
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
         
-        # print(i)
-        
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        #elif i in range(51, 226):
-         #   text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        #elif i in range(226, 500):
-        else:
+        elif i in range(51, 401):
+           text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
+        elif i in range(401, 501):
+        # else:
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
         
@@ -378,7 +376,6 @@ class Session:
         self.score = Score(self.background, self)        
         
     def update(self, actions):
-        # print(len(self.car_list))
         for idx, car in enumerate(self.car_list):
             if len(actions) != 0 and car.alive:
                 car.update(actions[idx])
@@ -411,7 +408,6 @@ class Session:
             
         self.states = self.get_states()
         self.scores = self.get_scores()
-        # print(self.scores)
 
         return self.states
 
@@ -451,9 +447,12 @@ if __name__ == '__main__':
         
         PATH = Path("results_gene/weights")
         n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"11.weights"), "rb") as f:
+        with open(PATH / Path(f"15.08.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
+        
+        for _ in range(1):
+            agent.mutate(0.1, 0.005) # ne pas mettre de seed
         
     else:
         nb_cars = 100
@@ -471,6 +470,8 @@ if __name__ == '__main__':
         
         states = ses.step(actions)
         # print([round(x, 2) for x in states[0]])
+    
+    print(ses.get_scores()[0], "\n")
     
     
     pg.quit()

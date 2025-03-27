@@ -4,11 +4,11 @@ import random as rd
 
 
 SEED = 42
-NN_LAYERS = [5, 6, 6, 4]
+NN_LAYERS = [5, 10, 10, 4]
 
 
-np.random.seed(SEED)
-rd.seed(SEED)
+# np.random.seed(SEED)
+# rd.seed(SEED)
 
 
 

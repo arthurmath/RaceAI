@@ -1,10 +1,11 @@
 import os
 import time
 import pickle
+import numpy as np
+import random as rd
+import tensorflow as tf
 from pathlib import Path
 import matplotlib.pyplot as plt
-import numpy as np
-import tensorflow as tf
 from dqn_game import Session
 
 from collections import deque
@@ -22,6 +23,7 @@ DISCOUNT_FACTOR = 0.95
 WEIGHTS_PATH = Path() / "results_dqn/weights"
 IMAGES_PATH = Path() / "results_dqn/images"
 
+rd.seed(SEED)
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
 
@@ -85,6 +87,7 @@ class DeepQN:
             
         self.env.close()
         return rewards, best_weights
+
     
     
     
