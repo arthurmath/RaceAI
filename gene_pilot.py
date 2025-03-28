@@ -7,8 +7,8 @@ SEED = 42
 NN_LAYERS = [5, 10, 10, 4]
 
 
-# np.random.seed(SEED)
-# rd.seed(SEED)
+np.random.seed(SEED)
+rd.seed(SEED)
 
 
 
