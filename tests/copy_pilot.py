@@ -17,6 +17,8 @@ pilot2 = cp.copy(pilot)
 
 pilot3 = cp.deepcopy(pilot)
 
+pilot4 = cp.copy(pilot3)
+
 
 print(pilot)
 print(pilot1)
@@ -25,6 +27,6 @@ print(pilot3)
 
 
 for i, weight in enumerate(pilot.weights):
-    print((pilot3.weights[i] == weight).all())
+    print((pilot4.weights[i] == weight).all())
 
 

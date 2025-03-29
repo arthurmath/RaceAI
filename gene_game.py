@@ -10,7 +10,7 @@ import pygame as pg
 
 
 
-FPS = 30
+FPS = 50
 WIDTH = 1200
 HEIGHT = 900
 WHITE = (255, 255, 255)
@@ -478,12 +478,12 @@ if __name__ == '__main__':
         
         PATH = Path("results_gene/weights")
         n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"15.08.weights"), "rb") as f:
+        with open(PATH / Path(f"s15.08.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
         
-        for _ in range(1):
-            agent.mutate(0.1, 0.005) # ne pas mettre de seed
+        #for _ in range(1):
+        #    agent.mutate(0.1, 0.005) # ne pas mettre de seed
         
     else:
         nb_cars = 100
@@ -494,7 +494,7 @@ if __name__ == '__main__':
     
     while not ses.done:
         if agent:
-            actions = [agent.predict(states).tolist()[0]]
+            actions = [agent.predict(states)]
         else:
             actions = [np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6]) for _ in range(nb_cars)] # [2, 0]
             actions = [[1 if i == action else 0 for i in range(4)] for action in actions] # [[0, 0, 1, 0], [1, 0, 0, 0]]]
