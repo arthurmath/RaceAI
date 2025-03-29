@@ -34,17 +34,21 @@ class Circuit:
             for j in range(0,self.number_of_pixel_width):
                 self.coord[i,j] = (j*self.pixel_size, i*self.pixel_size)
 
-        self.first_pos = (rd.randint(1, np.shape(self.coord)[1] - 1), rd.randint(1, np.shape(self.coord)[0] - 1))
-        self.first_angle = rd.choice(self.angle)
-        self.elements.append([self.first_pos, self.first_angle,0])
+        #Initialisation : première route posée (ligne droite), en excluant les bords 
+        self.actual_pos = self.coord[rd.randint(2, np.shape(self.coord)[0] - 2), rd.randint(2, np.shape(self.coord)[1] - 2)]
+        self.actual_angle = rd.choice(self.angle)
+        self.elements.append([self.actual_pos, self.actual_angle,0])
 
-        # while self.diff_counter < self.difficulty :
+        #while self.diff_counter < self.difficulty :
 
 
 
-    def draw(self, pos_x, pos_y ,angle,type):
+
+    def draw(self, position ,angle,type):
         #self.straight_road = pg.transform.rotate(self.car_img, self.angle)
         #self.straight_road_display = self.straight_road(center=self.straight_road_rect(topleft=(50, 50)).center)
+        pos_x = position[0]
+        pos_y = position[1]
         if type == 0: #straight road
 
             straight_road_rotated = pg.transform.rotate(self.straight_road, angle)
@@ -64,7 +68,11 @@ class Circuit:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
-            self.draw()
+            
+            #self.draw(self.elements[0][0], self.elements[0][1], self.elements[0][2])
+            for el in self.elements :
+                self.draw(el[0], el[1], el[2])
+        print(self.elements[0][0], self.elements[0][1], self.elements[0][2])
 
 
 
