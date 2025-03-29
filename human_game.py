@@ -23,10 +23,15 @@ class Car:
         self.compteur = 0 # pour les collisions
         self.nbCollisions = 0
         
-        self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
-                            (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
-                            (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
-                            (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436), (239, 270)]
+        # self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
+        #                     (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
+        #                     (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
+        #                     (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436), (239, 270)]
+        
+        self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
+                            (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
+                            (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
+                            (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -256,9 +261,9 @@ class Car:
                 forward = None
                 self.traveled_distance = self.last_traveled_distance
             
-        # if checkpoint_progress == True :
-        #     print(self.validate_checkpoint)
-        #     print(f"Checkpoint {self.validate_checkpoint} atteint!")
+        if checkpoint_progress == True :
+            print(self.validate_checkpoint)
+            print(f"Checkpoint {self.validate_checkpoint} atteint!")
             # print(behind_cp)
 
         progression = (self.traveled_distance/self.total_distance)*100
