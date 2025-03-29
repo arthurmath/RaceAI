@@ -95,6 +95,10 @@ class GeneticAlgo:
         
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.best_scores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
+        
+        new_list = [[self.bestPilots[i], self.best_scores[i]] for i in range(len(self.best_scores))]
+        
+        print(new_list)
 
 
                 
