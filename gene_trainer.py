@@ -11,7 +11,7 @@ import os
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 20
+N_EPISODES = 100
 N_STEPS = 80 
 EPISODE_INCREASE = 2
 
@@ -96,9 +96,9 @@ class GeneticAlgo:
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.best_scores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
-        new_list = [[self.bestPilots[i], self.best_scores[i]] for i in range(len(self.best_scores))]
+        #self.new_list = [[self.bestPilots[i], self.best_scores[i]] for i in range(len(self.best_scores))]
         
-        print(new_list)
+        #print(self.new_list[:5])
 
 
                 
@@ -106,6 +106,10 @@ class GeneticAlgo:
         """ Creates a new generation of pilot. """
         
         self.new_population = cp.copy(self.bestPilots) # 10% best pilots
+        #print(self.new_population[:5])
+
+        # Check if the weights of the new population are the same as the best pilots
+        print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
         
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
@@ -121,6 +125,9 @@ class GeneticAlgo:
             self.new_population.append(baby)
         
         self.population = cp.copy(self.new_population)
+
+        print(all([all([(self.bestPilots[j].weights[i] == self.population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
+        print()
         
     
     def select_parents_bests(self):
