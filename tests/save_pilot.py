@@ -13,6 +13,7 @@ from gene_pilot import Pilot
 
 
 pilot = Pilot()
+print(pilot)
 
 
 PATH = Path("results_gene/weights")
@@ -31,8 +32,8 @@ states = [[rd.uniform(-1, 1) for _ in range(5)] for _ in range(50)]
 
 for state in states:
 
-    action = pilot.predict(state).tolist()[0]
-    action_saved = pilot_saved.predict(state).tolist()[0]
+    action = pilot.predict(state)
+    action_saved = pilot_saved.predict(state)
     
     print(action_saved == action)
 
