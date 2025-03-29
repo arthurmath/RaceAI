@@ -3,14 +3,7 @@ import time
 import numpy as np
 import random as rd
 
-
-
-
-
-
-
-
-
+rd.seed(42)
 
 
 # In best_survives :
@@ -36,3 +29,22 @@ import random as rd
         # with open(Path("results_gene/weights") / Path(f"best.weights"), "wb") as f: # write binary
         #     pickle.dump((self.bestPilots[0].weights, self.bestPilots[0].bias), f)
         #     # pickle.dump((self.population[idx].weights, self.population[idx].bias), f)
+        
+        
+        
+        
+# M = [[rd.uniform(-1, 1) for _ in range(3)] for _ in range(4)]
+# M = np.array(M)
+# print(type(M))
+
+M = np.random.random((4, 3))
+print(type(M))
+        
+vector = [rd.uniform(-1, 1) for _ in range(4)]
+vector = np.array(vector)
+            
+    
+# result = np.dot(np.array(vector), np.matrix(M))# + np.array(bias)
+result = np.dot(vector, M)
+
+print(result)

@@ -67,7 +67,6 @@ class GeneticAlgo:
         for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
             
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
-            actions = [mat.tolist()[0] for mat in actions]
         
             states = self.ses.step(actions)
             
@@ -104,8 +103,6 @@ class GeneticAlgo:
         
         self.new_population = cp.copy(self.bestPilots) # 10% best pilots
         
-        # threshold = int((POPULATION - self.survival_prop) / 2)
-        
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
@@ -123,16 +120,11 @@ class GeneticAlgo:
         
     
     def select_parents_bests(self):
-        """Select two pilots among best ones."""
+        """Select two pilots with high scores among best ones."""
         total_scores = sum(self.best_scores)
         ratios = [f / total_scores for f in self.best_scores]
         return rd.choices(self.bestPilots, weights=ratios, k=2) # return a k-sized list 
     
-    def select_parents_pop(self):
-        """Select two pilots in population with high scores for diversity."""
-        total_scores = sum(self.scores)
-        ratios = [f / total_scores for f in self.scores]
-        return rd.choices(self.population, weights=ratios, k=2) 
 
 
 
