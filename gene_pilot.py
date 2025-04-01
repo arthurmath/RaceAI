@@ -28,27 +28,26 @@ class Pilot:
         self.weights = []
         for i in range(len(NN_LAYERS) - 1): 
             # Pour chaque couche du NN, creation d'une matrice de poids 
-            matrix = np.matrix([[rd.uniform(-1, 1) for _ in range(NN_LAYERS[i+1])] for _ in range(NN_LAYERS[i])]) # rd.gauss(0, 0.5)
+            matrix = np.array([[rd.uniform(-1, 1) for _ in range(NN_LAYERS[i+1])] for _ in range(NN_LAYERS[i])]) # rd.gauss(0, 0.5)
             # matrix = npr.uniform(-1, 1, (NN_LAYERS[i], NN_LAYERS[i+1]))
             self.weights.append(matrix)
         
     def initialize_bias(self):
         self.bias = []
         for layer in self.weights:
-            vector = np.matrix([rd.uniform(-1, 1) for _ in range(layer.shape[1])]) # rd.gauss(0, 0.5)
+            vector = np.array([rd.uniform(-1, 1) for _ in range(layer.shape[1])]) # rd.gauss(0, 0.5)
             # vector = npr.uniform(-1, 1, layer.shape[1])
             self.bias.append(vector)
             
     
     def predict(self, vector):
+        vector = np.array(vector)
         for i, (weight, bias) in enumerate(zip(self.weights, self.bias)):
-            vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
-            # vector = vector @ weight + bias
+            vector = vector @ weight + bias
             if i == len(self.weights) - 1:
                 vector = self.relu(vector)
             else:
                 vector = self.heaviside(vector)
-        vector = vector.tolist()[0]
         return vector
     
     def relu(self, x):
@@ -79,13 +78,11 @@ class Pilot:
 
     def cross_layer(self, layer1, layer2): # better
         """ Performs a crossover on two layers """
-        lineCut = rd.randint(0, layer1.shape[0] - 1)
-        # lineCut = npr.randint(0, layer1.shape[0])
+        lineCut = npr.randint(0, layer1.shape[0])
         if len(layer1.shape) == 1:  # 1D case
             return np.hstack((layer1[:lineCut], layer2[lineCut:]))
 
-        columnCut = rd.randint(0, layer1.shape[1] - 1)
-        # columnCut = npr.randint(0, layer1.shape[1])
+        columnCut = npr.randint(0, layer1.shape[1])
         res = np.vstack((
             layer1[:lineCut],
             np.hstack((layer1[lineCut, :columnCut], layer2[lineCut, columnCut:])),
@@ -105,8 +102,7 @@ class Pilot:
         mask = npr.rand(*layer.shape) < mutation_rate # Tableau de True et False
         mutations = np.clip(npr.normal(0, std_mutation, size=layer.shape), -1, 1) # -1 < mutations < 1 (stabilité numérique)
         layer = np.where(mask, layer + mutations, layer)  # condition, valeur_si_vrai, valeur_si_faux (layer += mask * mutations) 
-        return np.matrix(layer)
-        # return layer
+        return layer
 
     
     

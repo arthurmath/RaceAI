@@ -11,9 +11,9 @@ import os
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 100
-N_STEPS = 80 
-STEPS_INCREASE = 2
+N_EPISODES = 20
+N_STEPS = 100 
+STEPS_INCREASE = 4
 
 STD_MUTATION = 0.2
 MUTATION_RATE = 0.1
@@ -104,9 +104,6 @@ class GeneticAlgo:
         """ Creates a new generation of pilot. """
         
         self.new_population = cp.deepcopy(self.bestPilots) # 10% best pilots
-
-        # Check if the weights of the new population are the same as the best pilots
-        print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
         
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
@@ -116,14 +113,13 @@ class GeneticAlgo:
                 baby = parent1.mate(parent2)
                 baby.mutate(0.3, std=0.1)
             else:
-                baby = cp.deepcopy(rd.choices(self.bestPilots[:10])[0]) # green
+                baby = cp.deepcopy(rd.choices(self.bestPilots[:5])[0]) # green
                 baby.mutate(0.1, std=0.1)
                 
             self.new_population.append(baby)
         
         self.population = self.new_population
 
-        print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
         
     
     def select_parents_bests(self):
@@ -150,12 +146,12 @@ if __name__ == "__main__":
     
     
     
-    # if not algo.ses.quit:
-        # # Save weights and biases of the best pilot
-        # PATH = Path("results_gene/weights")
-        # n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        # with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
-        #     pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
+    if not algo.ses.quit:
+        # Save weights and biases of the best pilot
+        PATH = Path("results_gene/weights")
+        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
+        with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
+            pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
         # # Show graph of scores
         # plt.plot(algo.best_scores, label='Best scores')
@@ -272,3 +268,9 @@ if __name__ == "__main__":
 # Améliorations : 
 # Tuer les cars qui ont un score < 5% pour accélérer le temps de train global 
 # Ne pas réévaluer les 50 meilleurs pilotes (inutile) mais les conserver dans une 2e liste. 
+
+
+
+
+# print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
+# Solution au problème de baisse du high score entre 2 generations : il faut deepcopy quand on sélectionne les parents, sinon la mutation les modifie aussi 

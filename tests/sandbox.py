@@ -37,14 +37,24 @@ rd.seed(42)
 # M = np.array(M)
 # print(type(M))
 
-M = np.random.random((4, 3))
-print(type(M))
+# M = np.random.random((4, 3))
+# print(type(M))
         
-vector = [rd.uniform(-1, 1) for _ in range(4)]
-vector = np.array(vector)
+# vector = [rd.uniform(-1, 1) for _ in range(4)]
+# vector = np.array(vector)
             
     
 # result = np.dot(np.array(vector), np.matrix(M))# + np.array(bias)
-result = np.dot(vector, M)
+# result = np.dot(vector, M)
+# print(result)
 
-print(result)
+
+
+
+NN_LAYERS = [5, 10, 10, 4]
+matrix = np.array([[rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])] for _ in range(NN_LAYERS[0])])
+bias = np.array([rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])])
+print(type(matrix))
+vector = np.array([1, 2, 3, 4, 5])
+res = vector @ matrix + bias
+print(type(res))
