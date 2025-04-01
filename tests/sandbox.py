@@ -51,10 +51,26 @@ rd.seed(42)
 
 
 
-NN_LAYERS = [5, 10, 10, 4]
-matrix = np.array([[rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])] for _ in range(NN_LAYERS[0])])
-bias = np.array([rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])])
-print(type(matrix))
-vector = np.array([1, 2, 3, 4, 5])
-res = vector @ matrix + bias
-print(type(res))
+# NN_LAYERS = [5, 10, 10, 4]
+# matrix = np.array([[rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])] for _ in range(NN_LAYERS[0])])
+# bias = np.array([rd.uniform(-1, 1) for _ in range(NN_LAYERS[1])])
+# print(type(matrix))
+# vector = np.array([1, 2, 3, 4, 5])
+# res = vector @ matrix + bias
+# print(type(res))
+
+
+checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
+                (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
+                (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
+                (680, 532), (620, 582), (620, 760), (570, 797), (238, 505), (238, 352)]
+
+
+checkpoints2 = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
+               (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
+               (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
+               (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)]
+
+print(len(checkpoints))
+print(len(checkpoints2))
+print([i if checkpoints[i] != checkpoints2[i] else 0 for i in range(len(checkpoints))])
