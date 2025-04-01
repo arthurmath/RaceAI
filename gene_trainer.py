@@ -13,7 +13,7 @@ POPULATION = 500
 SURVIVAL_RATE = 0.1
 N_EPISODES = 100
 N_STEPS = 80 
-EPISODE_INCREASE = 2
+STEPS_INCREASE = 2
 
 STD_MUTATION = 0.2
 MUTATION_RATE = 0.1
@@ -48,6 +48,7 @@ class GeneticAlgo:
                 break
             
             print(f"Generation {self.generation+1}, avg score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}") # , mr: {self.mutation_rate:.2f}
+            print()
             
         if not self.ses.quit:
             self.evaluate_generation() # Evaluate the last generation
@@ -64,7 +65,7 @@ class GeneticAlgo:
         self.ses.reset(self.generation)
         states = self.ses.get_states()
 
-        for step in range(N_STEPS + EPISODE_INCREASE * self.generation):
+        for step in range(N_STEPS + STEPS_INCREASE * self.generation):
             
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
         
@@ -96,17 +97,13 @@ class GeneticAlgo:
         self.bestPilots = population_sorted[:self.survival_prop] # take the 10% bests pilots
         self.best_scores = scores_sorted[:self.survival_prop]  # take the 10% bests scores
         
-        #self.new_list = [[self.bestPilots[i], self.best_scores[i]] for i in range(len(self.best_scores))]
-        
-        #print(self.new_list[:5])
 
 
                 
     def change_generation(self):
         """ Creates a new generation of pilot. """
         
-        self.new_population = cp.copy(self.bestPilots) # 10% best pilots
-        #print(self.new_population[:5])
+        self.new_population = cp.deepcopy(self.bestPilots) # 10% best pilots
 
         # Check if the weights of the new population are the same as the best pilots
         print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
@@ -115,19 +112,18 @@ class GeneticAlgo:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
             if len(self.new_population) < 400:
-                parent1, parent2 = self.select_parents_bests() # blue
+                parent1, parent2 = cp.deepcopy(self.select_parents_bests()) # blue
                 baby = parent1.mate(parent2)
                 baby.mutate(0.3, std=0.1)
             else:
-                baby = rd.choices(self.bestPilots[:5])[0] # green
+                baby = cp.deepcopy(rd.choices(self.bestPilots[:10])[0]) # green
                 baby.mutate(0.1, std=0.1)
                 
             self.new_population.append(baby)
         
-        self.population = cp.copy(self.new_population)
+        self.population = self.new_population
 
-        print(all([all([(self.bestPilots[j].weights[i] == self.population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
-        print()
+        print(all([all([(self.bestPilots[j].weights[i] == self.new_population[j].weights[i]).all() for i in range(3)]) for j in range(50)]))
         
     
     def select_parents_bests(self):

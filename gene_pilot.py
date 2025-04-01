@@ -44,7 +44,7 @@ class Pilot:
         for i, (weight, bias) in enumerate(zip(self.weights, self.bias)):
             vector = np.dot(np.array(vector), np.matrix(weight)) + np.array(bias)
             # vector = vector @ weight + bias
-            if i == len(self.weights):
+            if i == len(self.weights) - 1:
                 vector = self.relu(vector)
             else:
                 vector = self.heaviside(vector)

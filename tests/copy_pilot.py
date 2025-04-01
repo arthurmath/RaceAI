@@ -17,7 +17,7 @@ pilot2 = cp.copy(pilot)
 
 pilot3 = cp.deepcopy(pilot)
 
-pilot4 = cp.copy(pilot3)
+pilot4 = cp.deepcopy(pilot3)
 
 
 print(pilot)
