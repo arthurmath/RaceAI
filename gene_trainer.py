@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from gene_pilot import Pilot
-from old_game import Session
+from gene_game import Session
 from pathlib import Path
 import copy as cp
 import random as rd
