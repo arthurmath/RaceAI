@@ -20,11 +20,8 @@ checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 
                (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (238, 505), (238, 352)]
 
 
-def distance_squared(p1, p2):
-    return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
-
 def distance(p1, p2):
-    return math.sqrt(distance_squared(p1, p2))
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 def project_point_on_segment(p, a, b):
     ax, ay = a
@@ -55,7 +52,7 @@ def get_progression(pos):
     last_cp = 0
     for i in range(len(checkpoints) - 1):
         proj = project_point_on_segment(pos, checkpoints[i], checkpoints[i + 1])
-        dist = distance_squared(pos, proj)
+        dist = distance(pos, proj) ** 2
         if dist < min_dist:
             min_dist = dist
             closest_projection = proj
@@ -84,13 +81,13 @@ while running:
     # Dessiner le point de la souris
     pg.draw.circle(screen, (0, 255, 0), mouse_pos, 7)
     
-    # Dessiner les checkpoints
-    for checkpoint in checkpoints:
-        pg.draw.circle(screen, (255, 0, 0), checkpoint, 5)
-    
     # Dessiner les lignes entre checkpoints
     for i in range(len(checkpoints) - 1):
         pg.draw.line(screen, (0, 0, 255), checkpoints[i], checkpoints[i + 1], 2)
+    
+    # Dessiner les checkpoints
+    for checkpoint in checkpoints:
+        pg.draw.circle(screen, (255, 0, 0), checkpoint, 5)
     
     # Dessiner le dernier checkpoint validé
     pg.draw.circle(screen, (255, 255, 255), checkpoints[last_cp], 5)

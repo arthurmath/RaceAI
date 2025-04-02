@@ -46,7 +46,7 @@ class Car:
         self.checkpoints =  [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
                             (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
                             (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
-                            (680, 532), (620, 582), (620, 760), (570, 797), (238, 505), (238, 352)]
+                            (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -66,7 +66,7 @@ class Car:
     def update(self, actions: list[int]):
     
         moved = False  
-        self.progression = self.get_progression()
+        self.progression = self.get_progression_old()
         self.previous_pos = (self.x, self.y) 
         
         moves = ['U', 'D', 'L', 'R']      
@@ -235,7 +235,7 @@ class Car:
         progression = (self.traveled_distance/self.total_distance)*100
         #print(progression)
         return min(max(progression, 0), 100)
-
+    
     
     def get_progression(self):
         

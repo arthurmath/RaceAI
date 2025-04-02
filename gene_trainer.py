@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from gene_pilot import Pilot
-from gene_game import Session
+from old_game import Session
 from pathlib import Path
 import copy as cp
 import random as rd
@@ -11,7 +11,7 @@ import os
 SEED = 42
 POPULATION = 500
 SURVIVAL_RATE = 0.1
-N_EPISODES = 50
+N_EPISODES = 100
 N_STEPS = 120 
 STEPS_INCREASE = 4
 
@@ -48,7 +48,6 @@ class GeneticAlgo:
                 break
             
             print(f"Generation {self.generation+1}, avg score: {self.avgGenScore:.2f}, best score: {self.bestGenScore:.2f}") # , mr: {self.mutation_rate:.2f}
-            print()
             
         if not self.ses.quit:
             self.evaluate_generation() # Evaluate the last generation
@@ -60,7 +59,6 @@ class GeneticAlgo:
 
 
     def evaluate_generation(self):
-        self.scores = []
             
         self.ses.reset(self.generation)
         states = self.ses.get_states()
