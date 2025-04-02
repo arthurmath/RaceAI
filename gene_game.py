@@ -235,7 +235,7 @@ class Car:
         progression = (self.traveled_distance/self.total_distance)*100
         #print(progression)
         return min(max(progression, 0), 100)
-
+    
     
     def get_progression(self):
         
@@ -270,10 +270,9 @@ class Car:
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        elif i in range(51, 401):
+        elif i in range(51, 301):
            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        elif i in range(401, 501):
-        # else:
+        elif i in range(301, 501):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
     

@@ -33,8 +33,9 @@ class GeneticAlgo:
         self.best_scores = []
         self.avg_scores = []
         self.mutation_rate = 1
+        self.threshold = 400
         
-        self.ses = Session(display=True, nb_cars=POPULATION)
+        self.ses = Session(self, display=True, nb_cars=POPULATION)
         
         self.population = [Pilot() for _ in range(POPULATION)]
 
@@ -60,7 +61,7 @@ class GeneticAlgo:
 
     def evaluate_generation(self):
             
-        self.ses.reset(self.generation)
+        self.ses.reset(self.generation, self.population[0])
         states = self.ses.get_states()
 
         for step in range(N_STEPS + STEPS_INCREASE * self.generation):
@@ -106,13 +107,13 @@ class GeneticAlgo:
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
-            if len(self.new_population) < 400:
+            if len(self.new_population) < self.threshold:
                 parent1, parent2 = cp.deepcopy(self.select_parents_bests()) # blue
                 baby = parent1.mate(parent2)
-                baby.mutate(0.3, std=0.1)
+                baby.mutate(0.3, std=0.1) # 0.2
             else:
                 baby = cp.deepcopy(rd.choices(self.bestPilots[:5])[0]) # green
-                baby.mutate(0.1, std=0.1)
+                baby.mutate(0.1, std=0.1) # 0.2
                 
             self.new_population.append(baby)
         

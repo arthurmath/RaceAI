@@ -11,7 +11,7 @@ import pygame as pg
 
 
 FPS = 50
-WIDTH = 1200
+WIDTH = 1300
 HEIGHT = 900
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
@@ -46,7 +46,7 @@ class Car:
         self.checkpoints =  [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
                             (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
                             (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
-                            (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)]
+                            (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)] # new : (238, 505), (238, 352)
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -270,10 +270,9 @@ class Car:
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        elif i in range(51, 401):
+        elif i in range(51, ses.algo.threshold + 1):
            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        elif i in range(401, 501):
-        # else:
+        elif i in range(ses.algo.threshold + 1, 501):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
     
@@ -375,10 +374,11 @@ class Score:
 
 
 class Session:        
-    def __init__(self, nb_cars, display=True):
+    def __init__(self, algo, nb_cars, display=True):
         self.display = display
         self.nb_cars = nb_cars
         self.quit = False
+        self.algo = algo
         
         pg.init()
         self.clock = pg.time.Clock()
@@ -408,12 +408,14 @@ class Session:
         img_width, img_height = self.finish_img.get_size()
         self.finish_img = pg.transform.scale(self.finish_img, (img_width * 0.78 , img_height * 0.78))
         
-    def reset(self, gen=1):
+    def reset(self, gen=1, nn=None):
         self.nb_pilots = self.nb_cars
         self.nb_alive = self.nb_cars
         self.done = False
         self.generation = gen
         self.scores = [0] * self.nb_pilots
+        if nn is not None:
+            self.best_nn = nn
         
         self.generate_objects()
     
@@ -437,6 +439,10 @@ class Session:
             if car.alive:
                 car.draw(self, i)
         self.score.draw(self)
+        try:
+            self.draw_nn(self.best_nn)
+        except:
+            pass
         pg.display.flip()
 
 
@@ -478,6 +484,33 @@ class Session:
             
 
         return self.scores
+    
+    def draw_nn(self, network):
+        network = network.weights
+
+        # Nombre de neurones par couche
+        layer_sizes = [network[0].shape[0]] + [w.shape[1] for w in network]
+
+        # Positions des neurones
+        x_spacing = 70 
+        neuron_positions = []
+        for i, layer_size in enumerate(layer_sizes):
+            y_spacing = 150 // (layer_size + 1)
+            neuron_positions.append([(1000 + x_spacing * (i + 1), y_spacing * (j + 1)) for j in range(layer_size)])
+
+        # Dessiner les connexions
+        for i in range(len(network)):
+            for j, neuron1 in enumerate(neuron_positions[i]):
+                for k, neuron2 in enumerate(neuron_positions[i + 1]):
+                    weight = network[i][j, k]
+                    color = (255, 0, 0) if weight > 0 else (0, 0, 255)  # Rouge pour positif, bleu pour négatif
+                    thickness = int(abs(weight) * 3)  # Épaisseur proportionnelle au poids
+                    pg.draw.line(self.screen, color, neuron1, neuron2, thickness)
+
+        # Dessiner les neurones
+        for layer in neuron_positions:
+            for x, y in layer:
+                pg.draw.circle(self.screen, WHITE, (x, y), 5)  # Neurones en noir
 
 
 
