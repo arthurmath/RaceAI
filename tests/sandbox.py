@@ -61,6 +61,11 @@ rd.seed(42)
 
 
 
+def distance_signed(p1, p2):
+    return (p1[0] - p2[0]) + (p1[1] - p2[1])
+    
+p1 = (1, 2)
+p2 = (3, 4)
+print(p1[0])
 
-vector = np.random.uniform(-1, 1, (3, 4))
-print(type(vector))
+print(distance_signed(p1, p2))

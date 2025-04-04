@@ -24,9 +24,9 @@ class Car:
         self.nbCollisions = 0
         
         self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
-                            (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
-                            (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
-                            (680, 532), (620, 582), (620, 760), (570, 797), (238, 505), (238, 352)]
+                            (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 400), 
+                            (941, 400), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
+                            (680, 532), (620, 582), (620, 760), (540, 810), (238, 515), (238, 352)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -41,25 +41,7 @@ class Car:
         self.behind_cp = False
         self.in_checkpoint = False
         
-        self.lines = [((300, 40), (300, 650), (0, 0, 255)),
-                    ((200, 130), (400, 130), (255, 0, 255)),
-                    ((320, 390), (520, 390), (0, 0, 255)),
-                    ((420, 150), (420, 500), (0, 0, 255)),
-                    ((530, 30), (530, 400), (0, 0, 255)),
-                    ((440, 125), (1030, 125), (0, 0, 255)),
-                    ((940, 40), (940, 320), (0, 0, 255)),
-                    ((620, 240), (1050, 240), (0, 0, 255)),
-                    ((680, 240), (680, 440), (0, 0, 255)),
-                    ((570, 340), (1000, 340), (0, 0, 255)),
-                    ((600, 440), (1030, 440), (0, 0, 255)),
-                    ((940, 360), (940, 840), (0, 0, 255)),
-                    ((800, 750), (1030, 750), (0, 0, 255)),
-                    ((890, 600), (890, 840), (0, 0, 255)),
-                    ((580, 580), (870, 580), (0, 0, 255)),
-                    ((780, 490), (780, 770), (0, 0, 255)),
-                    ((680, 490), (680, 770), (0, 0, 255)),
-                    ((570, 570), (570, 840), (0, 0, 255)),
-                    ((170, 370), (620, 820), (0, 0, 255))]
+
         
         
     def update(self, ses):
@@ -114,19 +96,23 @@ class Car:
 
 
     def draw(self, ses):
+        for i in range(len(self.checkpoints) - 1):
+            pg.draw.line(ses.screen, (0, 0, 255), self.checkpoints[i], self.checkpoints[i + 1], 2)
+            
+        for checkpoint in self.checkpoints:
+            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 4)
+            
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
-        for checkpoint in self.checkpoints:
-            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
+        pg.draw.circle(ses.screen, (255, 255, 255), (self.x, self.y), 3)
         
         # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
         # ses.screen.blit(lib.show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
         
+
         
-        for start, end, color in self.lines:
-            pg.draw.line(ses.screen, color, start, end, 2)
     
     
     
@@ -134,20 +120,18 @@ class Car:
     def get_progression(self):
         
         # Trouver la projection du point sur le tracé
-        closest_projection = None
         min_dist = float('inf')
-        last_cp = 0
         car_pos = self.x, self.y
         for i in range(len(self.checkpoints) - 1):
             proj = lib.project_point_on_segment(car_pos, self.checkpoints[i], self.checkpoints[i + 1])
             dist = lib.distance_squared(car_pos, proj)
             if dist < min_dist:
                 min_dist = dist
-                closest_projection = proj
-                last_cp = i
+                self.closest_projection = proj
+                self.last_cp = i
         
-        traveled_distance = sum(lib.distance(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(last_cp))
-        traveled_distance += lib.distance(self.checkpoints[last_cp], closest_projection)
+        traveled_distance = sum(lib.distance(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(self.last_cp))
+        traveled_distance += lib.distance(self.checkpoints[self.last_cp], self.closest_projection)
         
         return (traveled_distance / self.total_distance) * 100 
     
@@ -328,12 +312,22 @@ class Session:
         
             self.update()
             self.draw()
+            states = self.get_states()
+            print([round(x, 2) for x in states[0]])
             
-    
-    
-
-        
-
+            
+    def get_states(self):
+        self.states = []
+        dist_to_center_line = lib.distance(self.car.closest_projection, (self.car.x, self.car.y))
+        dist_to_center_line *= lib.position_relative(self.car.checkpoints[self.car.last_cp], self.car.checkpoints[self.car.last_cp + 1], (self.car.x, self.car.y)) # pour savoir si la voiture est à droite ou à gauche de la center line
+        dist_to_next_cp = lib.distance(self.car.checkpoints[self.car.last_cp + 1], (self.car.x, self.car.y))
+        # direction_next_curve = lib.distance(self.car.checkpoints[self.car.last_cp + 1], self.car.checkpoints[self.car.last_cp + 2]) 
+        direction_next_curve = lib.position_relative(self.car.checkpoints[self.car.last_cp], self.car.checkpoints[self.car.last_cp + 1], self.car.checkpoints[self.car.last_cp + 2]) # pour savoir si le prochain virage est à droite (1) ou gauche (-1)
+        angle_to_center_line = lib.center_angle(self.car.angle - (360 - lib.angle_segment(self.car.checkpoints[self.car.last_cp], self.car.checkpoints[self.car.last_cp + 1])) % 360)
+        self.states.append([self.car.speed, dist_to_center_line, dist_to_next_cp, direction_next_curve, angle_to_center_line])
+        self.states = lib.normalisation2(self.states) 
+        return self.states    
+            
 
 if __name__ == '__main__':
     
@@ -393,3 +387,30 @@ if __name__ == '__main__':
 
 #     progression = (distance_parcourue / self.total_distance) * 100
 #     return min(max(progression, 0), 100)
+
+
+
+
+# self.lines = [((300, 40), (300, 650), (0, 0, 255)),
+#             ((200, 130), (400, 130), (255, 0, 255)),
+#             ((320, 390), (520, 390), (0, 0, 255)),
+#             ((420, 150), (420, 500), (0, 0, 255)),
+#             ((530, 30), (530, 400), (0, 0, 255)),
+#             ((440, 125), (1030, 125), (0, 0, 255)),
+#             ((940, 40), (940, 320), (0, 0, 255)),
+#             ((620, 240), (1050, 240), (0, 0, 255)),
+#             ((680, 240), (680, 440), (0, 0, 255)),
+#             ((570, 340), (1000, 340), (0, 0, 255)),
+#             ((600, 440), (1030, 440), (0, 0, 255)),
+#             ((940, 360), (940, 840), (0, 0, 255)),
+#             ((800, 750), (1030, 750), (0, 0, 255)),
+#             ((890, 600), (890, 840), (0, 0, 255)),
+#             ((580, 580), (870, 580), (0, 0, 255)),
+#             ((780, 490), (780, 770), (0, 0, 255)),
+#             ((680, 490), (680, 770), (0, 0, 255)),
+#             ((570, 570), (570, 840), (0, 0, 255)),
+#             ((170, 370), (620, 820), (0, 0, 255))]
+
+
+# for start, end, color in self.lines:
+#     pg.draw.line(ses.screen, color, start, end, 2)

@@ -5,7 +5,7 @@ import math
 
 
 def get_progression(self):
-    """ Orlane. Calcule l'avancée de la voiture sur le circuit : distance parcourue et checkpoints"""
+    """ Calcule l'avancée de la voiture sur le circuit : distance parcourue et checkpoints (Orlane)"""
 
     #La variable validate checkpoint permet, sur un cercle approximé centré sur le checkpoint, de valider la prise de checkpoint peu importe le sens
     # self.checkpoints = [(240, 275), (302, 75), (425, 450), (500, 95), (970, 95), (970, 270)]
@@ -199,6 +199,9 @@ def distance_squared(p1, p2):
 def distance(p1, p2):
     return math.sqrt(distance_squared(p1, p2))
 
+def distance_signed(p1, p2):
+    return (p1[0] - p2[0]) + (p1[1] - p2[1])
+
 def project_point_on_segment(p, a, b):
     ax, ay = a
     bx, by = b
@@ -225,8 +228,43 @@ def normalisation(states):
     states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
     return states
 
+def normalisation2(states):
+    """ Il faut que les entrées soient dans [-1, 1] pour converger """
+    list_ranges = [[-5, 10], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
+    states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
+    return states
+
 def scale(x, a, b):
     """Transforme la valeur x initialement comprise dans l'intervalle [a, b]
         en une valeur comprise dans l'intervalle [-1, 1]."""
     return 2 * (x - a) / (b - a) - 1
 
+def angle_segment(a, b):
+    ax, ay = a
+    bx, by = b
+    dx, dy = bx - ax, by - ay
+    angle = math.degrees(math.atan2(dx, -dy))  # -dy pour considérer la verticale
+    return angle
+    
+def position_relative(A, B, C):
+    """ Détermine si le point C est à gauche ou à droite par rapport au segment orienté de A vers B. """
+    
+    ABx, ABy = B[0] - A[0], B[1] - A[1]
+    ACx, ACy = C[0] - A[0], C[1] - A[1]
+    
+    # Calcul du déterminant (produit vectoriel en 2D)
+    det = ABx * ACy - ABy * ACx
+
+    if det >= 0:
+        return 1 # gauche
+    else:
+        return -1 # droite
+    
+def center_angle(angle):
+    """ Normalise les angles pour qu'ils restent entre -180 et 180. """
+    if -180 <= angle <= 180:
+        return angle
+    elif angle < -180:
+        return angle + 360
+    else:
+        return angle - 360

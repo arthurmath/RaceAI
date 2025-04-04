@@ -62,6 +62,24 @@ def get_progression(pos):
     traveled_distance += distance(checkpoints[last_cp], closest_projection)
     
     return (traveled_distance / total_distance) * 100, closest_projection, last_cp
+
+
+
+
+
+def get_states(projection, last_cp, mouse_pos):
+    states = []
+    dist_to_center_line = lib.distance(projection, mouse_pos)
+    dist_to_next_cp = lib.distance(checkpoints[last_cp + 1], mouse_pos)
+    try:
+        direction_next_curve = lib.distance(checkpoints[last_cp + 1], checkpoints[last_cp + 2])
+    except:
+        direction_next_curve = 100 # Dernier cp
+    # angle_to_center_line = self.car.angle - lib.angle_segment(checkpoints[last_cp], checkpoints[last_cp + 1])
+    states.append([dist_to_center_line, dist_to_next_cp, direction_next_curve]) # speed, 
+    # self.states = lib.normalisation2(self.states) 
+    return states 
+    
             
             
 
@@ -76,6 +94,8 @@ while running:
     
     mouse_pos = pg.mouse.get_pos()
     progression, projection, last_cp = get_progression(mouse_pos)
+    states = get_states(projection, last_cp, mouse_pos)
+    print([round(x, 2) for x in states[0]]) # [[,], [0, 400], [0, 400]]
     
     
     # Dessiner le point de la souris
