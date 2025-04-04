@@ -295,6 +295,13 @@ if __name__ == "__main__":
 # Generation 16, avg score: 4.70, best score: 9.19
 
 
+# new states
+# Generation 1, avg score: 0.35, best score: 5.42
+# Generation 2, avg score: 1.52, best score: 5.42
+# Generation 3, avg score: 2.20, best score: 5.42
+# Generation 4, avg score: 2.58, best score: 15.72
+# ------------------------------------------------
+# Generation 22, avg score: 6.74, best score: 15.72
 
 
 

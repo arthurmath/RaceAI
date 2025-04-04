@@ -60,6 +60,8 @@ class Car:
         self.ortho_sys_x = ((300, 130), (400, 130))
         self.behind_cp = False
         self.in_checkpoint = False
+        self.closest_projection = self.initial_pos
+        self.last_cp = 0
 
 
         
@@ -240,20 +242,18 @@ class Car:
     def get_progression(self):
         
         # Trouver la projection du point sur le tracé
-        closest_projection = (0, 0)
         min_dist = float('inf')
-        last_cp = 0
         car_pos = self.x, self.y
         for i in range(len(self.checkpoints) - 1):
             proj = lib.project_point_on_segment(car_pos, self.checkpoints[i], self.checkpoints[i + 1])
             dist = lib.distance_squared(car_pos, proj)
             if dist < min_dist:
                 min_dist = dist
-                closest_projection = proj
-                last_cp = i
+                self.closest_projection = proj
+                self.last_cp = i
         
-        traveled_distance = sum(lib.distance(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(last_cp))
-        traveled_distance += lib.distance(self.checkpoints[last_cp], closest_projection)
+        traveled_distance = sum(lib.distance(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(self.last_cp))
+        traveled_distance += lib.distance(self.checkpoints[self.last_cp], self.closest_projection)
         
         return (traveled_distance / self.total_distance) * 100 
         
@@ -469,6 +469,20 @@ class Session:
         self.states = [[car.x, car.y, car.speed, car.angle, car.progression] for car in self.car_list]
         self.states = lib.normalisation(self.states) 
         return self.states    
+    
+    
+    def get_states_new(self):
+        self.states = []
+        for car in self.car_list:
+            dist_to_center_line = lib.distance(car.closest_projection, (car.x, car.y))
+            dist_to_center_line *= lib.position_relative(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1], (car.x, car.y)) # pour savoir si la voiture est à droite ou à gauche de la center line
+            dist_to_next_cp = lib.distance(car.checkpoints[car.last_cp + 1], (car.x, car.y))
+            # direction_next_curve = lib.distance(car.checkpoints[car.last_cp + 1], car.checkpoints[car.last_cp + 2]) 
+            direction_next_curve = lib.position_relative(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1], car.checkpoints[car.last_cp + 2]) # pour savoir si le prochain virage est à droite (1) ou gauche (-1)
+            angle_to_center_line = lib.center_angle(car.angle - (360 - lib.angle_segment(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1])) % 360)
+            self.states.append([car.speed, dist_to_center_line, dist_to_next_cp, direction_next_curve, angle_to_center_line])
+        self.states = lib.normalisation2(self.states) 
+        return self.states  
 
         
     def get_scores(self):
