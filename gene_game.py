@@ -68,7 +68,7 @@ class Car:
     def update(self, actions: list[int]):
     
         moved = False  
-        self.progression = self.get_progression_old()
+        self.progression = self.get_progression()
         self.previous_pos = (self.x, self.y) 
         
         moves = ['U', 'D', 'L', 'R']      
@@ -270,9 +270,10 @@ class Car:
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        elif i in range(51, ses.algo.threshold + 1):
+        elif i in range(51, ses.threshold + 1):
            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        elif i in range(ses.algo.threshold + 1, 501):
+        #elif i in range(ses.threshold + 1, 501):
+        else:
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
     
@@ -378,7 +379,7 @@ class Session:
         self.display = display
         self.nb_cars = nb_cars
         self.quit = False
-        self.algo = algo
+        self.threshold = algo.threshold if algo is not None else 400
         
         pg.init()
         self.clock = pg.time.Clock()
@@ -459,7 +460,7 @@ class Session:
         if not any([car.alive for car in self.car_list]):
             self.done = True
             
-        self.states = self.get_states()
+        self.states = self.get_states_new()
         self.scores = self.get_scores()
 
         return self.states

@@ -140,7 +140,7 @@ class DeepQN:
     
 def main():
     
-    train = False
+    train = True
     dqn = DeepQN()
     n_train = len(os.listdir(WEIGHTS_PATH)) # nb de fichiers dans dossier weights
     

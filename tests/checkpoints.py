@@ -95,7 +95,7 @@ while running:
     mouse_pos = pg.mouse.get_pos()
     progression, projection, last_cp = get_progression(mouse_pos)
     states = get_states(projection, last_cp, mouse_pos)
-    print([round(x, 2) for x in states[0]]) # [[,], [0, 400], [0, 400]]
+    #print([round(x, 2) for x in states[0]]) # [[,], [0, 400], [0, 400]]
     
     
     # Dessiner le point de la souris

@@ -9,9 +9,9 @@ import os
 
 
 SEED = 42
-POPULATION = 500
-SURVIVAL_RATE = 0.1
-N_EPISODES = 100
+POPULATION = 1000
+SURVIVAL_RATE = 0.05
+N_EPISODES = 150
 N_STEPS = 120 
 STEPS_INCREASE = 4
 
@@ -33,9 +33,9 @@ class GeneticAlgo:
         self.best_scores = []
         self.avg_scores = []
         self.mutation_rate = 1
-        self.threshold = 400
+        self.threshold = 800
         
-        self.ses = Session(self, display=True, nb_cars=POPULATION)
+        self.ses = Session(self, nb_cars=POPULATION, display=True)
         
         self.population = [Pilot() for _ in range(POPULATION)]
 
@@ -107,7 +107,7 @@ class GeneticAlgo:
         while len(self.new_population) < POPULATION:
             self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
-            if len(self.new_population) < self.threshold:
+            if len(self.new_population) < self.threshold: # + d'exploration
                 parent1, parent2 = cp.deepcopy(self.select_parents_bests()) # blue
                 baby = parent1.mate(parent2)
                 baby.mutate(0.3, std=0.1)
@@ -152,13 +152,13 @@ if __name__ == "__main__":
         with open(PATH / Path(f"{n_train}.weights"), "wb") as f: # write binary
             pickle.dump((algo.bestPilotEver.weights, algo.bestPilotEver.bias), f)
     
-        # # Show graph of scores
-        # plt.plot(algo.best_scores, label='Best scores')
-        # plt.plot(algo.avg_scores, label='Average scores')
-        # plt.xlabel("Générations")
-        # plt.ylabel("Scores (%)")
-        # plt.legend()
-        # plt.show()
+        # Show graph of scores
+        plt.plot(algo.best_scores, label='Best scores')
+        plt.plot(algo.avg_scores, label='Average scores')
+        plt.xlabel("Générations")
+        plt.ylabel("Scores (%)")
+        plt.legend()
+        plt.show()
         
              
             
@@ -197,6 +197,8 @@ if __name__ == "__main__":
 # Generation 31, avg score: 8.65, best score: 31.97
 # Generation 32, avg score: 8.62, best score: 32.14
 # Generation 33, avg score: 8.26, best score: 32.14
+# ------------------------------------------------
+#Generation 150, avg score: 8.94, best score: 42.00
 
 
 # no mate: mutate(0.2, std=0.1)
