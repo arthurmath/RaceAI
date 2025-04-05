@@ -1,8 +1,9 @@
 import os
 import time
 import pickle
+import math
 import numpy as np
-import random as rd
+import random as rd # nécessaire ?
 import tensorflow as tf
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -20,12 +21,18 @@ BATCH_SIZE = 16 # 32
 N_EPISODES = 100 
 EPS_FACTOR = int(N_EPISODES * 5 / 6) 
 DISCOUNT_FACTOR = 0.95
+EPS_START = 0.9
+EPS_END = 0.05
+EPS_DECAY = int(N_EPISODES * 2 / 5)
+UPDATE_TARGET = 25
 WEIGHTS_PATH = Path() / "results_dqn/weights"
 IMAGES_PATH = Path() / "results_dqn/images"
 
 rd.seed(SEED)
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
+
+print("Devices: ", tf.config.list_physical_devices())
 
 
 
@@ -35,8 +42,8 @@ tf.random.set_seed(SEED)
 class DeepQN:
     def __init__(self):
         
-        self.input_shape = [6]  # == env.observation_space.shape
-        self.output_shape = 4  # == env.action_space.n
+        self.input_shape = [6]  # = env.observation_space.shape
+        self.output_shape = 4  # = env.action_space.n
 
         self.model = tf.keras.Sequential([
             tf.keras.layers.Input(self.input_shape),
@@ -45,9 +52,10 @@ class DeepQN:
             tf.keras.layers.Dense(32, activation="elu"),
             tf.keras.layers.Dense(self.output_shape)
         ])
+        print("Nombre de paramètres :", self.model.count_params())
         
         self.target = tf.keras.models.clone_model(self.model)  # CHANGED
-        self.target.set_weights(self.model.get_weights())  # CHANGED
+        self.target.set_weights(self.model.get_weights())      # CHANGED
         
         self.optimizer = tf.keras.optimizers.Nadam(learning_rate=LR)
         self.loss_fn = tf.keras.losses.MeanSquaredError()
@@ -58,7 +66,8 @@ class DeepQN:
     def train(self):
         
         self.env = Session(display=True)
-        rewards = [] 
+        rewards = []
+        progressions = []
         best_score = 0
 
         for episode in range(N_EPISODES):
@@ -67,35 +76,37 @@ class DeepQN:
             
             episode_reward = 0
             for step in range(N_STEPS + 10 * episode):
-                epsilon = max(1 - episode / EPS_FACTOR, 0.01)
-                state, reward, done = self.play_one_step(state, epsilon)
+                # epsilon = max(1 - episode / EPS_FACTOR, 0.01)
+                epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY)
+                state, reward, progression, done = self.play_one_step(state, epsilon)
                 episode_reward += reward
-                # if done:
-                #     break
+                if done:
+                    break
 
             rewards.append(episode_reward)
-            if episode_reward >= best_score:
+            progressions.append(progression)
+            if progression >= best_score:
                 best_weights = self.model.get_weights()
-                best_score = episode_reward
+                best_score = progression
 
-            if episode > int(BATCH_SIZE * 1.5):
+            if len(replay_buffer) > BATCH_SIZE:
                 self.training_step()
-                if episode % 50 == 0:                                  # CHANGED
+                if episode % UPDATE_TARGET == 0:                       # CHANGED
                     self.target.set_weights(self.model.get_weights())  # CHANGED
                 
-            print(f"Episode: {episode + 1}, reward: {episode_reward:.2f}, done at step {step}, nb collisions: {self.env.car.nbCollisions}")
+            print(f"Episode: {episode + 1:>3}, progression: {progression:>4.2f}%, reward: {episode_reward:>6.2f}, done at step {step:>3}")
             
         self.env.close()
-        return rewards, best_weights
+        return rewards, progressions, best_weights
 
     
     
     
     def play_one_step(self, state, epsilon):
         action = self.epsilon_greedy_policy(state, epsilon)
-        next_state, reward, done = self.env.step(action)
+        next_state, reward, progression, done = self.env.step(action)
         replay_buffer.append((state, action, reward, next_state, done))
-        return next_state, reward, done
+        return next_state, reward, progression, done
 
 
     def epsilon_greedy_policy(self, state, epsilon):
@@ -125,13 +136,13 @@ class DeepQN:
             loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values))
 
         grads = tape.gradient(loss, self.model.trainable_variables)
-        self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))  
+        self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         
         
     def sample_experiences(self):
         indices = np.random.randint(len(replay_buffer), size=BATCH_SIZE)
         batch = [replay_buffer[index] for index in indices]
-        return [[experience[field_index] for experience in batch] for field_index in range(5)] 
+        return [[experience[field_index] for experience in batch] for field_index in range(5)]
         
         
         
@@ -150,7 +161,7 @@ def main():
             dqn.model.set_weights(weights)
         
         start = time.time()
-        rewards, best_weights = dqn.train()
+        rewards, best_weights, progressions = dqn.train()
         print(f"Durée entrainement avec {N_EPISODES} épisodes : {(time.time() - start)/60}min")
         
         with open(WEIGHTS_PATH / Path(f"{n_train}.weights"), "wb") as f:

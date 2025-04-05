@@ -2,8 +2,6 @@ import os
 import math
 import numpy as np
 import library as lib
-
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame as pg
 
     
