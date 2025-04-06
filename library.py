@@ -91,13 +91,13 @@ def project_point_on_segment(p, a, b):
     return (int(proj_x), int(proj_y))
 
 def normalisation(states):
-    """ Il faut que les entrées soient dans [-1, 1] pour converger """
+    """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
     list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [0, 100]]
     states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
     return states
 
 def normalisation2(states):
-    """ Il faut que les entrées soient dans [-1, 1] pour converger """
+    """ Il faut que les entrées du NN soient dans [-1, 1] pour converger (pour get_states_new)"""
     list_ranges = [[-5, 10], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
     states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
     return states
@@ -108,6 +108,7 @@ def scale(x, a, b):
     return 2 * (x - a) / (b - a) - 1
 
 def angle_segment(a, b):
+    """ Renvoie l'angle du segment [a, b] par rapport à la verticale """
     ax, ay = a
     bx, by = b
     dx, dy = bx - ax, by - ay

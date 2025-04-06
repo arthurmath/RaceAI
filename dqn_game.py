@@ -4,6 +4,17 @@ import numpy as np
 import library as lib
 import pygame as pg
 
+
+
+FPS = 50
+WIDTH = 1300
+HEIGHT = 900
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+
+
+
     
 class Car:
     def __init__(self, ses): 
@@ -14,6 +25,9 @@ class Car:
         self.acceleration = 0.2
         self.rotation_speed = 9
         self.max_speed = 10
+        self.progression = 0
+        self.old_progression = 0
+        self.alive = True
         
         self.car_img = ses.car_img
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
