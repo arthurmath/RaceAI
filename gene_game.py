@@ -4,7 +4,7 @@ import math
 import numpy as np
 import library as lib
 from pathlib import Path
-from gene_pilot import Pilot
+from gene_trainer import Pilot, THRESHOLD
 import pickle
 import pygame as pg
 
@@ -41,9 +41,9 @@ class Car:
         self.collision = 0
         self.compteur = 0 # pour les collisions
         self.nbCollisions = 0
+        self.moves = ['U', 'D', 'L', 'R'] 
         
-        
-        self.checkpoints =  [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
+        self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (360, 392), (420, 451), (479, 389), (479, 126), 
                             (531, 80), (941, 80), (988, 127), (988, 240), (940, 278), (680, 278), (614, 341), (681, 386), 
                             (941, 386), (986, 440), (986, 750), (941, 800), (890, 800), (840, 751), (840, 583), (780, 532), 
                             (680, 532), (620, 582), (620, 760), (570, 797), (301, 585), (236, 436)] # new : (238, 505), (238, 352)
@@ -70,12 +70,11 @@ class Car:
         moved = False  
         self.progression = self.get_progression()
         self.previous_pos = (self.x, self.y) 
-        
-        moves = ['U', 'D', 'L', 'R']      
+             
         
         # actions : [1, 0, 0, 1]
         actions = [j for j, act in enumerate(actions) if act] # [0, 3]
-        actions = [moves[action] for action in actions] # ['U', 'R']
+        actions = [self.moves[action] for action in actions] # ['U', 'R']
         
         if 'L' in actions:
             self.angle = (self.angle + self.rotation_speed) % 360
@@ -87,7 +86,7 @@ class Car:
         if 'D' in actions:
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
             moved = True
-                
+
 
         if not moved: # inertie
             if self.speed > 0:
@@ -240,7 +239,6 @@ class Car:
     
     
     def get_progression(self):
-        
         # Trouver la projection du point sur le tracé
         min_dist = float('inf')
         car_pos = self.x, self.y
@@ -251,10 +249,8 @@ class Car:
                 min_dist = dist
                 self.closest_projection = proj
                 self.last_cp = i
-        
         traveled_distance = sum(lib.distance(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(self.last_cp))
         traveled_distance += lib.distance(self.checkpoints[self.last_cp], self.closest_projection)
-        
         return (traveled_distance / self.total_distance) * 100 
         
 
@@ -270,9 +266,9 @@ class Car:
         # Affichage progression 
         if i in range(51):
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, WHITE)
-        elif i in range(51, ses.threshold + 1):
+        elif i in range(51, THRESHOLD):
            text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, BLUE)
-        #elif i in range(ses.threshold + 1, 501):
+        #elif i in range(THRESHOLD + 1, 501):
         else:
             text_surface1 = self.font.render(f"{ses.scores[i]:.2f}", True, GREEN)
         ses.screen.blit(text_surface1, (self.x, self.y))
@@ -313,9 +309,7 @@ class Background:
     def collision_finish(self, car):
         car_rect = car.car_rect
         return car_rect.colliderect(self.finish_rect)
-        
-        
-        
+
 
 
 class Score:
@@ -375,11 +369,10 @@ class Score:
 
 
 class Session:        
-    def __init__(self, algo, nb_cars, display=True):
+    def __init__(self, nb_cars, display=True):
         self.display = display
         self.nb_cars = nb_cars
         self.quit = False
-        self.threshold = algo.threshold if algo is not None else 400
         
         pg.init()
         self.clock = pg.time.Clock()
@@ -417,8 +410,8 @@ class Session:
         self.scores = [0] * self.nb_pilots
         if nn is not None:
             self.best_nn = nn
-        
         self.generate_objects()
+        return self.get_states()
     
     def generate_objects(self):
         self.car_list = [Car(self) for _ in range(self.nb_pilots)]
@@ -539,38 +532,29 @@ if __name__ == '__main__':
     
     if agent:
         ses = Session(nb_cars=1)
-        ses.reset()
-        states = ses.get_states()
+        states = ses.reset()
         
-        PATH = Path("results_gene/weights")
-        n_train = len(os.listdir(PATH)) # nb de fichiers dans dossier weights
-        with open(PATH / Path(f"2.weights"), "rb") as f:
+        with open(Path("results_gene/weights") / Path(f"2.weights"), "rb") as f:
             weights, bias = pickle.load(f)
             agent = Pilot(weights, bias)
         
         #for _ in range(1):
         #    agent.mutate(0.1, 0.005) # ne pas mettre de seed
         
+        while not ses.done:
+            actions = [agent.predict(states[0])]
+            states = ses.step(actions)
+        
     else:
         nb_cars = 100
         ses = Session(nb_cars)
-        ses.reset()
-        states = ses.get_states()
+        states = ses.reset()
     
-    
-    while not ses.done:
-        if agent:
-            actions = [agent.predict(states[0])]
-        else:
+        while not ses.done:
             actions = [np.random.choice(4, p=[3/6, 1/6, 1/6, 1/6]) for _ in range(nb_cars)] # [2, 0]
             actions = [[1 if i == action else 0 for i in range(4)] for action in actions] # [[0, 0, 1, 0], [1, 0, 0, 0]]]
+            states = ses.step(actions)
         
-        states = ses.step(actions)
-        # print([round(x, 2) for x in states[0]])
-        
-        for event in pg.event.get():
-            if event.type == pg.MOUSEBUTTONDOWN:
-                print(pg.mouse.get_pos())
     
     print(ses.get_scores()[0], "\n")
     
@@ -604,3 +588,10 @@ if __name__ == '__main__':
                 
 #         else:
 #             self.scores[i] -= 100
+
+
+
+
+# for event in pg.event.get():
+#     if event.type == pg.MOUSEBUTTONDOWN:
+#         print(pg.mouse.get_pos())

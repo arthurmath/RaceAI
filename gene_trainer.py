@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from gene_game import Session
 from pathlib import Path
 import copy as cp
 import random as rd
@@ -17,8 +16,6 @@ N_STEPS = 120
 STEPS_INCREASE = 4
 
 NN_LAYERS = [5, 10, 10, 4]
-STD_MUTATION = 0.2
-MUTATION_RATE = 0.1
 MR_MIN = 0.1
 MR_FACTOR = int(N_EPISODES * 1) 
 
@@ -90,7 +87,7 @@ class Pilot:
         return res
 
     def cross_layer(self, layer1, layer2): # better
-        """ Performs a crossover on two layers (keeps structure)"""
+        """ Performs a crossover on two layers (keeps matrices structures)"""
         lineCut = npr.randint(0, layer1.shape[0])
         if len(layer1.shape) == 1:  # 1D case
             return np.hstack((layer1[:lineCut], layer2[lineCut:]))
@@ -144,9 +141,8 @@ class GeneticAlgo:
         
         self.best_scores = []
         self.avg_scores = []
-        self.mutation_rate = 1
         
-        self.ses = Session(self, nb_cars=POPULATION, display=True)
+        self.ses = Session(nb_cars=POPULATION, display=True)
         
         self.population = [Pilot() for _ in range(POPULATION)]
 
@@ -176,13 +172,8 @@ class GeneticAlgo:
         states = self.ses.get_states()
 
         for step in range(N_STEPS + STEPS_INCREASE * self.generation):
-            
             actions = [self.population[i].predict(states[i]) for i in range(len(self.population))]
-        
             states = self.ses.step(actions)
-            
-            # print("STATES :", states)
-            # print("ACTIONS : ", actions)
             
             if self.ses.done:
                 break
@@ -211,12 +202,12 @@ class GeneticAlgo:
 
                 
     def change_generation(self):
-        """ Creates a new generation of pilot. """
+        """ Creates a new population of pilots from previous generation's 10% bests. """
         
         self.new_population = cp.deepcopy(self.bestPilots) # 10% best pilots
         
         while len(self.new_population) < POPULATION:
-            self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
+            # self.mutation_rate = max(1 - self.generation / MR_FACTOR, MR_MIN)
             
             if len(self.new_population) < THRESHOLD: # + d'exploration
                 parent1, parent2 = cp.deepcopy(self.select_parents_bests()) # blue
@@ -249,12 +240,10 @@ class GeneticAlgo:
 
 
 if __name__ == "__main__":
-    
+    from gene_game import Session
     
     algo = GeneticAlgo()
     algo.train()
-    
-    
     
     if not algo.ses.quit:
         # Save weights and biases of the best pilot

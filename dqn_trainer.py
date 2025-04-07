@@ -7,16 +7,15 @@ import random as rd # nécessaire ?
 import tensorflow as tf
 from pathlib import Path
 import matplotlib.pyplot as plt
-from dqn_game import Session
 
 from collections import deque
 replay_buffer = deque(maxlen=2000)
 
 
 
-SEED = 42
 LR = 1e-2
 N_STEPS = 200
+POPULATION = 1 
 BATCH_SIZE = 16 # 32
 N_EPISODES = 100 
 EPS_FACTOR = int(N_EPISODES * 5 / 6) 
@@ -28,22 +27,22 @@ UPDATE_TARGET = 25
 WEIGHTS_PATH = Path() / "results_dqn/weights"
 IMAGES_PATH = Path() / "results_dqn/images"
 
+SEED = 42
 rd.seed(SEED)
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
 
-print("Devices: ", tf.config.list_physical_devices())
+# print("Devices: ", tf.config.list_physical_devices())
 
 
 
 
 
-
-class DeepQN:
+class DeepQNetwork:
     def __init__(self):
         
-        self.input_shape = [6]  # = env.observation_space.shape
-        self.output_shape = 4  # = env.action_space.n
+        self.input_shape = [5]  # = env.observation_space.shape
+        self.output_shape = 4   # = env.action_space.n
 
         self.model = tf.keras.Sequential([
             tf.keras.layers.Input(self.input_shape),
@@ -54,89 +53,109 @@ class DeepQN:
         ])
         print("Nombre de paramètres :", self.model.count_params())
         
-        self.target = tf.keras.models.clone_model(self.model)  # CHANGED
-        self.target.set_weights(self.model.get_weights())      # CHANGED
         
+        
+        
+        
+        
+
+
+class Trainer:  
+    def __init__(self, warm_start):
+        self.dqn = DeepQNetwork()
+        self.target = tf.keras.models.clone_model(self.dqn.model)  # CHANGED
+        self.target.set_weights(self.dqn.model.get_weights())      # CHANGED
+        
+        if warm_start:
+            with open(WEIGHTS_PATH / Path(f"colab1.weights"), "rb") as f:
+                self.dqn.model.set_weights(pickle.load(f))
+                
         self.optimizer = tf.keras.optimizers.Nadam(learning_rate=LR)
         self.loss_fn = tf.keras.losses.MeanSquaredError()
-        
-        # self.previous_moves = [0, 0]
         
         
     def train(self):
         
-        self.env = Session(display=True)
-        rewards = []
-        progressions = []
-        best_score = 0
+        self.env = Session(display=True, nb_cars=POPULATION)
+        self.rewards = []
+        self.progressions = []
+        self.best_score = 0
 
-        for episode in range(N_EPISODES):
+        for self.episode in range(N_EPISODES):
             
-            state, done = self.env.reset()
-            
-            episode_reward = 0
-            for step in range(N_STEPS + 10 * episode):
-                # epsilon = max(1 - episode / EPS_FACTOR, 0.01)
-                epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY)
-                state, reward, progression, done = self.play_one_step(state, epsilon)
-                episode_reward += reward
-                if done:
-                    break
-
-            rewards.append(episode_reward)
-            progressions.append(progression)
-            if progression >= best_score:
-                best_weights = self.model.get_weights()
-                best_score = progression
+            self.evaluate_generation()
 
             if len(replay_buffer) > BATCH_SIZE:
                 self.training_step()
-                if episode % UPDATE_TARGET == 0:                       # CHANGED
-                    self.target.set_weights(self.model.get_weights())  # CHANGED
+                if self.episode % UPDATE_TARGET == 0:                      # CHANGED
+                    self.target.set_weights(self.dqn.model.get_weights())  # CHANGED
+                    
+            if self.env.quit:
+                break
                 
-            print(f"Episode: {episode + 1:>3}, progression: {progression:>4.2f}%, reward: {episode_reward:>6.2f}, done at step {step:>3}")
+            print(f"Episode: {self.episode + 1:>3}, progression: {max(self.progressions):>4.2f}%, reward: {max(self.rewards):>6.2f}, done at step {self.step:>3}")
+            # print()
             
-        self.env.close()
-        return rewards, progressions, best_weights
-
+        return self.rewards, self.best_weights
     
     
     
-    def play_one_step(self, state, epsilon):
-        action = self.epsilon_greedy_policy(state, epsilon)
-        next_state, reward, progression, done = self.env.step(action)
-        replay_buffer.append((state, action, reward, next_state, done))
-        return next_state, reward, progression, done
+    def evaluate_generation(self):
+        
+        self.episode_reward = 0
+        state = self.env.reset(self.episode)
+            
+        for self.step in range(N_STEPS + 10 * self.episode):
+            action = self.epsilon_greedy_policy(state)
+            move = [[1 if action[0] == i else 0 for i in range(4)]]
+            next_states, progressions, rewards, dones = self.env.step(move, self.step)
+            next_state, progression, reward, done = next_states[0], progressions[0], rewards[0], dones[0]
+            replay_buffer.append((state, action, reward, next_state, done))
+            
+            self.episode_reward += reward
+            if self.env.done:
+                break
 
+        self.rewards.append(self.episode_reward)
+        self.progressions.append(progression)
+        if progression >= self.best_score:
+            self.best_weights = self.dqn.model.get_weights()
+            self.best_score = progression
+        
 
-    def epsilon_greedy_policy(self, state, epsilon):
+    def epsilon_greedy_policy(self, state):
+        epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * self.episode / EPS_DECAY)
         if np.random.rand() < epsilon:
-            # return np.random.randint(self.output_shape)  # random action
-            return np.random.choice(np.arange(4), p=[3/6, 1/6, 1/6, 1/6]) # on favorise l'action 'avant'
+            return [np.random.choice(np.arange(4), p=[1/2, 1/4, 1/4, 0])] # on favorise l'action up
         else:
-            Q_values = self.model.predict(np.array(state)[np.newaxis, :], verbose=0)[0]
-            return Q_values.argmax()  # optimal action according to the DQN
+            # print("model")
+            Q_values = self.dqn.model.predict(np.array(state), verbose=0)[0]
+            return [Q_values.argmax()] # optimal action according to the DQN 
+        
+        
+        
+
 
 
     def training_step(self):
-        
         states, actions, rewards, next_states, dones = self.sample_experiences()
+        states = np.array(states).reshape(BATCH_SIZE, self.dqn.input_shape[0])
         
-        # next_Q_values = self.model.predict(np.array(next_states), verbose=0)
+        # next_Q_values = self.dqn.model.predict(np.array(next_states), verbose=0)
         next_Q_values = self.target.predict(np.array(next_states), verbose=0)  # CHANGED
         max_next_Q_values = next_Q_values.max(axis=1)
         runs = np.ones(len(dones)) - np.array(dones)
         target_Q_values = rewards + runs * DISCOUNT_FACTOR * max_next_Q_values
         target_Q_values = target_Q_values.reshape(-1, 1)
         
-        mask = tf.one_hot(actions, self.output_shape)
+        mask = tf.one_hot(actions, self.dqn.output_shape)
         with tf.GradientTape() as tape:
-            all_Q_values = self.model(np.array(states))
+            all_Q_values = self.dqn.model(np.array(states))
             Q_values = tf.reduce_sum(all_Q_values * mask, axis=1, keepdims=True)
             loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values))
 
-        grads = tape.gradient(loss, self.model.trainable_variables)
-        self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+        grads = tape.gradient(loss, self.dqn.model.trainable_variables)
+        self.optimizer.apply_gradients(zip(grads, self.dqn.model.trainable_variables))
         
         
     def sample_experiences(self):
@@ -149,21 +168,17 @@ class DeepQN:
         
         
     
-def main():
+if __name__=='__main__':
+    from dqn_game import Session
     
-    train = True
-    dqn = DeepQN()
-    n_train = len(os.listdir(WEIGHTS_PATH)) # nb de fichiers dans dossier weights
+    algo = Trainer(warm_start=False)
+    start = time.time()
+    rewards, best_weights = algo.train()
+    print(f"Durée entrainement avec {N_EPISODES} épisodes : {(time.time() - start)/60:2f}min")
     
-    if train:
-        with open(WEIGHTS_PATH / Path(f"colab1.weights"), "rb") as f:
-            weights = pickle.load(f) # warm start
-            dqn.model.set_weights(weights)
-        
-        start = time.time()
-        rewards, best_weights, progressions = dqn.train()
-        print(f"Durée entrainement avec {N_EPISODES} épisodes : {(time.time() - start)/60}min")
-        
+    
+    if not algo.env.quit:
+        n_train = len(os.listdir(WEIGHTS_PATH)) # nb de fichiers dans dossier weights
         with open(WEIGHTS_PATH / Path(f"{n_train}.weights"), "wb") as f:
             pickle.dump((best_weights), f)
         
@@ -175,30 +190,13 @@ def main():
         plt.tight_layout()
         plt.savefig(IMAGES_PATH / Path(f"{n_train}_rewards_plot.png"), format="png", dpi=300)
         plt.show()
-        
-    else:
-        with open(WEIGHTS_PATH / Path(f"colab3.weights"), "rb") as f:
-            weights = pickle.load(f)
-        
-        dqn.model.set_weights(weights)
-        
-        env = Session(display=True)
-        state, done = env.reset()
-        done = False
-
-        print("start")
-        while not done:
-            moves = dqn.model.predict(np.array(state)[np.newaxis, :], verbose=0)[0].argmax()
-            state, _, done = env.step(moves)
-            done = False
-        env.close()
+    
+    
 
 
 
 
 
-if __name__=='__main__':
-    main()
 
 
     
@@ -213,10 +211,5 @@ if __name__=='__main__':
 
 # Impossible de faire plusieurs actions en meme temps
 
-
-# next_state = self.normalize_state(next_state)
-# next_state.append(self.previous_moves) # #######
-
-# prendre le espilon exponentiel de gpt.py
 
 
