@@ -97,18 +97,6 @@ class Pilot:
             ))
         return res
     
-    def cross_layer2(self, layer1, layer2):
-        res = layer1
-        if len(layer1.shape) == 1:  # 1D case
-            for i in range(layer1.shape[0]):
-                if rd.random() > 0.5:
-                        res[i] = layer2[i]
-        else:
-            for i in range(layer1.shape[0]):
-                for j in range(layer1.shape[1]):
-                    if rd.random() > 0.5:
-                        res[i, j] = layer2[i, j]
-        return res
     
 
     def mutate(self):

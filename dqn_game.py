@@ -278,9 +278,9 @@ class Session:
         self.nb_alive = self.nb_cars
         self.generation = gen
         self.done = False
-        self.dones = [False] * self.nb_pilots
         self.progressions = [0] * self.nb_pilots
         self.rewards = [0] * self.nb_pilots
+        self.dones = [False] * self.nb_pilots
         self.generate_objects()
         return self.get_states()
         
@@ -308,7 +308,6 @@ class Session:
 
 
     def step(self, actions, nb_step):
-        self.nb_step = nb_step
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.done = True
@@ -317,13 +316,13 @@ class Session:
         self.update(actions)
         if self.display:
             self.draw()
-        
-        if not any([car.alive for car in self.car_list]):
-            self.done = True
             
         self.states = self.get_states()
         self.progressions = self.get_progressions()
-        self.rewards = self.get_rewards()
+        self.rewards = self.get_rewards(nb_step)
+        
+        if not any([car.alive for car in self.car_list]):
+            self.done = True
 
         return self.states, self.progressions, self.rewards, self.dones
     
@@ -341,16 +340,16 @@ class Session:
         states = lib.normalisation2(states) 
         return states  
 
-        
+
     def get_progressions(self):
         for i, car in enumerate(self.car_list):
             self.progressions[i] = car.progression
         return self.progressions
 
 
-    def get_rewards(self):
+    def get_rewards(self, nb_step):
         for i, car in enumerate(self.car_list):
-            self.rewards[i] = self.progressions[i] - 0.1 * self.nb_step
+            self.rewards[i] = self.progressions[i] - 0.1 * nb_step
             
             if not car.alive:
                 self.rewards[i] -= 10

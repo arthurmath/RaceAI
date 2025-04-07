@@ -3,13 +3,11 @@ import time
 import pickle
 import math
 import numpy as np
-import random as rd # nécessaire ?
+import random as rd
 import tensorflow as tf
 from pathlib import Path
 import matplotlib.pyplot as plt
-
 from collections import deque
-replay_buffer = deque(maxlen=2000)
 
 
 
@@ -24,8 +22,8 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = int(N_EPISODES * 2 / 5)
 UPDATE_TARGET = 25
-WEIGHTS_PATH = Path() / "results_dqn/weights"
-IMAGES_PATH = Path() / "results_dqn/images"
+WEIGHTS_PATH = Path("results_dqn/weights")
+IMAGES_PATH = Path("results_dqn/images")
 
 SEED = 42
 rd.seed(SEED)
@@ -37,10 +35,28 @@ tf.random.set_seed(SEED)
 
 
 
+class Memory:
+    def __init__(self):
+        self.memory = deque(maxlen=10000)
+    
+    def push(self, states, actions, next_states, rewards, dones):
+        for i in range(len(states)):
+            self.memory.append((states[i], actions[i], next_states[i], rewards[i], dones[i]))
+    
+    def sample(self):
+        indices = np.random.randint(len(self.memory), size=BATCH_SIZE)
+        batch = [self.memory[index] for index in indices]
+        return [[experience[field_index] for experience in batch] for field_index in range(5)]
+    
+    def __len__(self):
+        return len(self.memory)
+
+
+
+
 
 class DeepQNetwork:
     def __init__(self):
-        
         self.input_shape = [5]  # = env.observation_space.shape
         self.output_shape = 4   # = env.action_space.n
 
@@ -51,7 +67,7 @@ class DeepQNetwork:
             tf.keras.layers.Dense(32, activation="elu"),
             tf.keras.layers.Dense(self.output_shape)
         ])
-        print("Nombre de paramètres :", self.model.count_params())
+        # print("Nombre de paramètres :", self.model.count_params())
         
         
         
@@ -75,8 +91,9 @@ class Trainer:
         
         
     def train(self):
-        
+        from dqn_game import Session
         self.env = Session(display=True, nb_cars=POPULATION)
+        self.memory = Memory()
         self.rewards = []
         self.progressions = []
         self.best_score = 0
@@ -85,7 +102,7 @@ class Trainer:
             
             self.evaluate_generation()
 
-            if len(replay_buffer) > BATCH_SIZE:
+            if len(self.memory) > BATCH_SIZE:
                 self.training_step()
                 if self.episode % UPDATE_TARGET == 0:                      # CHANGED
                     self.target.set_weights(self.dqn.model.get_weights())  # CHANGED
@@ -93,43 +110,40 @@ class Trainer:
             if self.env.quit:
                 break
                 
-            print(f"Episode: {self.episode + 1:>3}, progression: {max(self.progressions):>4.2f}%, reward: {max(self.rewards):>6.2f}, done at step {self.step:>3}")
+            print(f"Ep: {self.episode+1:>2}, progres: {self.progressions[-1]:>4.2f}%, reward: {self.rewards[-1]:>6.2f}, done: {self.step:>3}, epsi:{self.epsilon:.2f}")
             # print()
             
-        return self.rewards, self.best_weights
     
     
     
     def evaluate_generation(self):
         
-        self.episode_reward = 0
-        state = self.env.reset(self.episode)
+        states = self.env.reset(self.episode)
             
         for self.step in range(N_STEPS + 10 * self.episode):
-            action = self.epsilon_greedy_policy(state)
-            move = [[1 if action[0] == i else 0 for i in range(4)]]
-            next_states, progressions, rewards, dones = self.env.step(move, self.step)
-            next_state, progression, reward, done = next_states[0], progressions[0], rewards[0], dones[0]
-            replay_buffer.append((state, action, reward, next_state, done))
+            actions = self.epsilon_greedy_policy(states)
+            moves = [[1 if actions[0] == i else 0 for i in range(4)]]
+            next_states, progressions, rewards, dones = self.env.step(moves, self.step)
             
-            self.episode_reward += reward
+            self.memory.push(states, actions, next_states, rewards, dones)
+            states = next_states
+            
             if self.env.done:
                 break
 
-        self.rewards.append(self.episode_reward)
-        self.progressions.append(progression)
-        if progression >= self.best_score:
+        self.rewards.append(rewards[0])
+        self.progressions.append(progressions[0])
+        if progressions[0] >= self.best_score:
             self.best_weights = self.dqn.model.get_weights()
-            self.best_score = progression
+            self.best_score = progressions[0]
         
 
-    def epsilon_greedy_policy(self, state):
-        epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * self.episode / EPS_DECAY)
-        if np.random.rand() < epsilon:
-            return [np.random.choice(np.arange(4), p=[1/2, 1/4, 1/4, 0])] # on favorise l'action up
+    def epsilon_greedy_policy(self, states):
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * self.episode / EPS_DECAY)
+        if np.random.rand() < self.epsilon:
+            return [np.random.choice(np.arange(4), p=[4/6, 1/6, 1/6, 0])] # on favorise l'action up
         else:
-            # print("model")
-            Q_values = self.dqn.model.predict(np.array(state), verbose=0)[0]
+            Q_values = self.dqn.model.predict(np.array(states), verbose=0)[0]
             return [Q_values.argmax()] # optimal action according to the DQN 
         
         
@@ -138,7 +152,7 @@ class Trainer:
 
 
     def training_step(self):
-        states, actions, rewards, next_states, dones = self.sample_experiences()
+        states, actions, next_states, rewards, dones = self.memory.sample()
         states = np.array(states).reshape(BATCH_SIZE, self.dqn.input_shape[0])
         
         # next_Q_values = self.dqn.model.predict(np.array(next_states), verbose=0)
@@ -158,10 +172,6 @@ class Trainer:
         self.optimizer.apply_gradients(zip(grads, self.dqn.model.trainable_variables))
         
         
-    def sample_experiences(self):
-        indices = np.random.randint(len(replay_buffer), size=BATCH_SIZE)
-        batch = [replay_buffer[index] for index in indices]
-        return [[experience[field_index] for experience in batch] for field_index in range(5)]
         
         
         
@@ -169,21 +179,20 @@ class Trainer:
         
     
 if __name__=='__main__':
-    from dqn_game import Session
     
     algo = Trainer(warm_start=False)
     start = time.time()
-    rewards, best_weights = algo.train()
-    print(f"Durée entrainement avec {N_EPISODES} épisodes : {(time.time() - start)/60:2f}min")
+    algo.train()
+    print(f"Durée entrainement en {algo.episode} épisodes : {(time.time() - start)/60:.2f}min")
     
     
     if not algo.env.quit:
         n_train = len(os.listdir(WEIGHTS_PATH)) # nb de fichiers dans dossier weights
         with open(WEIGHTS_PATH / Path(f"{n_train}.weights"), "wb") as f:
-            pickle.dump((best_weights), f)
+            pickle.dump((algo.best_weights), f)
         
         plt.figure(figsize=(8, 4))
-        plt.plot(rewards)
+        plt.plot(algo.rewards)
         plt.xlabel("Episode")
         plt.ylabel("Sum of rewards")
         plt.grid(True)
