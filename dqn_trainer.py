@@ -37,19 +37,19 @@ tf.random.set_seed(SEED)
 
 class Memory:
     def __init__(self):
-        self.memory = deque(maxlen=10000)
+        self.buffer = deque(maxlen=10000)
     
     def push(self, states, actions, next_states, rewards, dones):
         for i in range(len(states)):
-            self.memory.append((states[i], actions[i], next_states[i], rewards[i], dones[i]))
+            self.buffer.append((states[i], actions[i], next_states[i], rewards[i], dones[i]))
     
     def sample(self):
-        indices = np.random.randint(len(self.memory), size=BATCH_SIZE)
-        batch = [self.memory[index] for index in indices]
+        indices = np.random.randint(len(self.buffer), size=BATCH_SIZE)
+        batch = [self.buffer[index] for index in indices]
         return [[experience[field_index] for experience in batch] for field_index in range(5)]
     
     def __len__(self):
-        return len(self.memory)
+        return len(self.buffer)
 
 
 
@@ -62,7 +62,6 @@ class DeepQNetwork:
 
         self.model = tf.keras.Sequential([
             tf.keras.layers.Input(self.input_shape),
-            tf.keras.layers.Dense(32, activation="elu"),
             tf.keras.layers.Dense(32, activation="elu"),
             tf.keras.layers.Dense(32, activation="elu"),
             tf.keras.layers.Dense(self.output_shape)

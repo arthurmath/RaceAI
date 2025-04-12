@@ -11,17 +11,17 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = int(NUM_EPISODES * 2 / 5)
 
-EPS_MIN = 0.3
-EPS_FACTOR = int(NUM_EPISODES * 1.1) 
+EPS_MIN = 0.1
+EPS_FACTOR = int(NUM_EPISODES * 0.5) 
 
 
 epsilon1 = []
-epsilon2 = []
+epsilon2 = [1]
 
 for episode in range(NUM_EPISODES):
-    print(episode)
     epsilon1.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY))
-    epsilon2.append(max(1 - episode / EPS_FACTOR, EPS_MIN))
+    #epsilon2.append(max(1 - episode / EPS_FACTOR, EPS_MIN))
+    epsilon2.append(max(epsilon2[-1] - 2 / NUM_EPISODES, EPS_MIN))
 
 
 plt.figure(figsize=(8, 4))
