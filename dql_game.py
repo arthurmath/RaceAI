@@ -248,6 +248,7 @@ class Session:
         self.generation = gen
         self.episode_done = False
         self.rewards = [0] * self.nb_pilots
+        self.prev_rewards = [0] * self.nb_pilots
         self.terminateds = [False] * self.nb_pilots
         self.generate_objects()
         return self.get_states()
@@ -301,23 +302,18 @@ class Session:
 
 
     def get_rewards(self, nb_step):
+        step_reward = 0
         for i, car in enumerate(self.car_list):
-            self.rewards[i] = car.progression - 0.01 * nb_step
+            self.rewards[i] -= 0.01
+            
+            step_reward = self.rewards[i] - self.prev_reward[i]
+            self.prev_reward[i] = self.rewards[i]
             
             if not car.alive:
-                self.rewards[i] -= 10
+                step_reward = -10
                 self.terminateds[i] = True
-            
-            # old TODO
-            # self.fitness = self.car.progression
-            # reward = self.fitness - self.old_fitness
-            # self.old_fitness = self.fitness
-            
-            # if car.x > 370 and car.y > 410:
-            #     self.rewards[i] += 2
-            #     # print("reward")
         
-        return self.rewards
+        return step_reward
     
     def close(self):
         pg.quit()
