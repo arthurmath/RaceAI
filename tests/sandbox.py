@@ -21,6 +21,9 @@ rd.seed(42)
 # print(dqn.model.predict(vec).shape)
 
 
+x_space = np.linspace(0, 1200, 30)
+
+state_x = np.digitize(1000, x_space)
 
 
 L1 = np.arange(50)

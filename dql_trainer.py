@@ -6,14 +6,15 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from dql_game import Session
+import library as lib
 
 
 class DQN(nn.Module):
     def __init__(self, inputs, outputs):
         super().__init__()
-        self.fc1 = nn.Linear(inputs, 10)   # fully-connected layer
-        self.fc2 = nn.Linear(10, 10)       # fully-connected layer
-        self.out = nn.Linear(10, outputs)  # ouptut layer
+        self.fc1 = nn.Linear(inputs, 20)   # fully-connected layer
+        self.fc2 = nn.Linear(20, 20)       # fully-connected layer
+        self.out = nn.Linear(20, outputs)  # ouptut layer
 
     def forward(self, x):
         x = F.relu(self.fc1(x))     # Apply rectified linear unit (ReLU) activation
@@ -24,7 +25,7 @@ class DQN(nn.Module):
 
 class ReplayMemory():
     def __init__(self):
-        self.memory = deque([], maxlen=100_000)
+        self.memory = deque([], maxlen=10_000)
 
     def append(self, transition):
         self.memory.append(transition)
@@ -39,12 +40,12 @@ class ReplayMemory():
 class DQL():
     # Hyperparameters 
     alpha = 0.01                    # learning rate
-    gamma = 0.9                     # discount rate  
+    gamma = 0.95                     # discount rate
     network_sync_rate = 500         # number of steps the agent takes before syncing the policy and target network
     batch_size = 32                 # size of the data set sampled from the replay memory
     num_divisions = 30
-    min_eps = 0
-    nb_episodes = 100
+    min_eps = 0.1
+    nb_episodes = 10000
     
     def __init__(self, render):
         self.env = Session(nb_cars=1, display=render)
@@ -76,10 +77,9 @@ class DQL():
 
         # Track number of steps taken. Used for syncing policy => target network.
         best_rewards = - float('inf')
-        goal_reached = False
             
         for episode in range(self.nb_episodes):
-            state = self.env.reset()
+            state = self.env.reset(episode)
             terminated = False   # True when agent falls in hole or reached goal
             rewards = 0
             step_count = 0
@@ -89,16 +89,19 @@ class DQL():
 
                 # Select action based on epsilon-greedy
                 if random.random() < epsilon:
-                    action = np.random.choice(self.env.action_space, p=[4/6, 1/6, 1/6, 0]) # on favorise l'action up
-                else:       
+                    action = np.random.choice(self.env.action_space, p=[0.5, 0.2, 0.2, 0.1]) # on favorise l'action up
+                    #print('random', action)
+                else:
                     with torch.no_grad():
-                        action = policy_dqn(self.state_to_dqn_input(state)).argmax().item()
+                        action = policy_dqn(self.normalisation(state)).argmax().item()
+                    #print('nn',action)
 
                 # Execute action
                 new_state, reward, terminated = self.env.step(action, step_count)
 
                 # Save experience into memory
-                memory.append((state, action, new_state, reward, terminated)) 
+                memory.append((state, action, new_state, reward, terminated))
+                #print((state, action, new_state, reward, terminated))
 
                 # Move to the next state
                 state = new_state
@@ -112,14 +115,10 @@ class DQL():
             if self.env.quit:
                 break
             
-            rewards_per_episode.append(rewards) 
-            
-            if terminated:
-                goal_reached = True
+            rewards_per_episode.append(rewards)
 
             # Graph training progress
-            if episode != 0 and episode % 200 == 0 :
-                print(f'Episode {episode}, epsilon {epsilon}, reward: {rewards}')
+            if episode != 0 and episode % 100 == 0:
                 self.plot_progress(rewards_per_episode, epsilon_history)
             
             if rewards > best_rewards:
@@ -127,17 +126,19 @@ class DQL():
                 torch.save(policy_dqn.state_dict(), filepath)
 
             # Check if enough experience has been collected
-            if len(memory) > self.batch_size and goal_reached:
+            if len(memory) > self.batch_size:
                 mini_batch = memory.sample(self.batch_size)
                 self.optimize(mini_batch, policy_dqn, target_dqn)        
 
                 # Decay epsilon
-                epsilon = max(epsilon - 2 / self.nb_episodes, self.min_eps)
+                epsilon = max(epsilon - 4 / self.nb_episodes, self.min_eps)
                 epsilon_history.append(epsilon)
 
                 # Copy policy network to target network after a certain number of episodes
                 if episode % self.network_sync_rate == 0:
                     target_dqn.load_state_dict(policy_dqn.state_dict())
+
+            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {reward:>6.2f}, memory: {len(memory)}')
 
         self.env.close()
         
@@ -156,15 +157,15 @@ class DQL():
                 # Calculate target q value 
                 with torch.no_grad():
                     target = torch.FloatTensor(
-                        reward + self.gamma * target_dqn(self.state_to_dqn_input(new_state)).max()
+                        reward + self.gamma * target_dqn(self.normalisation(new_state)).max()
                     )
 
             # Get the current set of Q values
-            current_q = policy_dqn(self.state_to_dqn_input(state))
+            current_q = policy_dqn(self.normalisation(state))
             current_q_list.append(current_q)
 
             # Get the target set of Q values
-            target_q = target_dqn(self.state_to_dqn_input(state)) 
+            target_q = target_dqn(self.normalisation(state)).detach()
             # Adjust the specific action to the target that was just calculated
             target_q[action] = target
             target_q_list.append(target_q)
@@ -173,6 +174,7 @@ class DQL():
         loss = self.loss_fn(torch.stack(current_q_list), torch.stack(target_q_list))
 
         # Optimize the model
+        torch.autograd.set_detect_anomaly(True)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -186,6 +188,12 @@ class DQL():
         state_s = np.digitize(state[2], self.speed_space)
         state_a = np.digitize(state[3], self.angle_space)
         return torch.FloatTensor([state_x, state_y, state_s, state_a])
+
+    def normalisation(self, state):
+        """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
+        list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
+        state = [lib.scale(state[i], *list_ranges[i]) for i in range(len(state))]
+        return state
     
             
     def plot_progress(self, rewards_per_episode, epsilon_history):
@@ -194,7 +202,7 @@ class DQL():
         plt.plot(rewards_per_episode)
         plt.subplot(122) # cell 2
         plt.plot(epsilon_history)
-        plt.savefig(f'raceAI_dql_{len(epsilon_history)}.png')
+        plt.savefig(f'rewards_episodes_{len(epsilon_history)}.png')
     
     
     # Run the environment with the learned policy
@@ -209,9 +217,9 @@ class DQL():
         terminated = False      # True when agent falls in hole or reached goal
         step_count = 0          
 
-        while not terminated: 
+        while not terminated:
             with torch.no_grad():
-                action = policy_dqn(self.state_to_dqn_input(state)).argmax().item()
+                action = policy_dqn(self.normalisation(state)).argmax().item()
 
             state, reward, terminated = self.env.step(action, step_count)
             step_count += 1
@@ -224,23 +232,9 @@ if __name__ == '__main__':
     filepath = "weights.pt"
 
     mountaincar = DQL(render=True)
-    # mountaincar.train(True, filepath)
-    mountaincar.test(filepath)
+    mountaincar.train(filepath)
+    #mountaincar.test(filepath)
     
     
     
     
-
-
-# if __name__ == '__main__':
-    
-#     dqn = DeepQNetwork()
-#     with open(Path("results_dqn/weights/colab1.weights"), "rb") as f:
-#         dqn.model.set_weights(pickle.load(f))
-        
-#     env = Session(nb_cars=1)
-#     states = env.reset()
-#     while not env.quit:
-#         actions = dqn.model.predict(np.array(states)[np.newaxis, :], verbose=0)[0].argmax()
-#         states = env.step(actions)
-        

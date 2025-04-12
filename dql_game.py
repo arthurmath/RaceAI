@@ -6,7 +6,7 @@ import pygame as pg
 
 
 
-FPS = 50
+FPS = 150
 WIDTH = 1300
 HEIGHT = 900
 WHITE = (255, 255, 255)
@@ -68,18 +68,18 @@ class Car:
         self.previous_pos = (self.x, self.y) 
              
         
-        # actions : [1, 0, 0, 1]
-        actions = [j for j, act in enumerate(actions) if act] # [0, 3]
-        actions = [self.moves[action] for action in actions] # ['U', 'R']
+        ## actions : [1, 0, 0, 1]
+        #actions = [j for j, act in enumerate(actions) if act] # [0, 3]
+        #actions = [self.moves[action] for action in actions] # ['U', 'R']
         
-        if 'L' in actions:
+        if 1 in actions:
             self.angle = (self.angle + self.rotation_speed) % 360
-        if 'R' in actions:
+        if 2 in actions:
             self.angle = (self.angle - self.rotation_speed) % 360
-        if 'U' in actions:
+        if 0 in actions:
             self.speed = min(self.speed + self.acceleration, self.max_speed)
             moved = True
-        if 'D' in actions:
+        if 3 in actions:
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
             moved = True
 
@@ -251,7 +251,7 @@ class Session:
         self.prev_rewards = [0] * self.nb_pilots
         self.terminateds = [False] * self.nb_pilots
         self.generate_objects()
-        return self.get_states()
+        return self.get_states()[0]
         
     def generate_objects(self):
         self.car_list = [Car(self) for _ in range(self.nb_pilots)]
@@ -298,7 +298,7 @@ class Session:
     def get_states(self):
         self.states = [[car.x, car.y, car.speed, car.angle] for car in self.car_list]
         self.states = lib.normalisation(self.states) 
-        return self.states[0]
+        return self.states
 
 
     def get_rewards(self, nb_step):
@@ -311,7 +311,17 @@ class Session:
             
             if not car.alive:
                 step_reward = -10
+                #self.rewards[i] -= 10
                 self.terminateds[i] = True
+            
+            # old TODO
+            # self.fitness = self.car.progression
+            # reward = self.fitness - self.old_fitness
+            # self.old_fitness = self.fitness
+            
+            # if car.x > 370 and car.y > 410:
+            #     self.rewards[i] += 2
+            #     # print("reward")
         
         return step_reward
     
@@ -330,31 +340,3 @@ class Session:
         
 
 
-
-
-
-# def update_scores(self):
-#     for i, car in enumerate(self.car_list):
-#         if car.alive:
-#             diff = car.progression - car.old_progression
-#             # self.scores[i] += 10 * diff
-#             # car.old_progression = car.progression
-
-#             self.scores[i] = car.progression
-#             if abs(diff) <= 1e-4:
-#                 self.scores[i] -= 1 # pénalise l’inaction
-
-#             # if car.collision:
-#                 # reward -= 0.5
-#             # if self.car.progression >= 10:
-#                 # reward += 10
-                
-#         else:
-#             self.scores[i] -= 100
-
-
-
-
-# for event in pg.event.get():
-#     if event.type == pg.MOUSEBUTTONDOWN:
-#         print(pg.mouse.get_pos())
