@@ -311,17 +311,9 @@ class Session:
             
             if not car.alive:
                 step_reward = -10
-                #self.rewards[i] -= 10
                 self.terminateds[i] = True
             
-            # old TODO
-            # self.fitness = self.car.progression
-            # reward = self.fitness - self.old_fitness
-            # self.old_fitness = self.fitness
-            
-            # if car.x > 370 and car.y > 410:
-            #     self.rewards[i] += 2
-            #     # print("reward")
+            # reward pour chaque cp atteint
         
         return step_reward
     
