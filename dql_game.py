@@ -36,12 +36,19 @@ class Car:
         
         self.collision = 0
         self.compteur = 0 # pour les collisions
-        self.moves = ['U', 'D', 'L', 'R']
         
-        self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
-                            (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
-                            (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
-                            (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
+        # self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
+        #                     (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
+        #                     (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
+        #                     (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
+        
+        self.checkpoints = [(240, 274), (240, 213), (239, 131), (300, 76), (364, 131), (365, 194), (365, 297), (366, 392), 
+                            (421, 459), (482, 398), (481, 316), (481, 226), (480, 128), (532, 78), (627, 78), (721, 78), 
+                            (824, 79), (942, 80), (991, 128), (991, 239), (941, 282), (859, 281), (766, 280), (678, 280), 
+                            (613, 341), (681, 406), (764, 404), (859, 402), (940, 403), (986, 443), (988, 510), (987, 587), 
+                            (987, 672), (988, 753), (948, 810), (878, 803), (833, 752), (836, 675), (833, 589), (780, 535), 
+                            (680, 534), (626, 587), (626, 681), (620, 763), (571, 811), (494, 785), (444, 736), (390, 683), 
+                            (316, 610), (262, 553), (239, 487), (239, 422), (239, 353)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
@@ -50,7 +57,6 @@ class Car:
         self.traveled_distance = 0
         self.last_traveled_distance = 0
         self.last_position = (self.x, self.y)
-        self.previous_pos = (self.x, self.y)
         self.ortho_sys_y = ((300, 40), (300, 130))
         self.ortho_sys_x = ((300, 130), (400, 130))
         self.behind_cp = False
@@ -58,6 +64,7 @@ class Car:
         self.closest_projection = self.initial_pos
         self.last_cp = 0
         self.finish_rect = ses.finish_img.get_rect(topleft=(200, 330))
+        self.current_cp = 0
 
         
         
@@ -65,12 +72,10 @@ class Car:
     
         moved = False  
         self.progression = self.get_progression()
-        self.previous_pos = (self.x, self.y) 
+        if self.last_cp > self.current_cp:
+            self.ses.rewards[0] += 1000 / len(self.checkpoints)
+            self.current_cp = self.last_cp
              
-        
-        ## actions : [1, 0, 0, 1]
-        #actions = [j for j, act in enumerate(actions) if act] # [0, 3]
-        #actions = [self.moves[action] for action in actions] # ['U', 'R']
         
         if 1 in actions:
             self.angle = (self.angle + self.rotation_speed) % 360
@@ -211,7 +216,7 @@ class Session:
         self.episode_done = False
         self.quit = False
         
-        self.observation_space = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
+        self.observation_space = [[0, 1200], [0, 900], [-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
         self.action_space = [0, 1, 2, 3]
         
         pg.init()
@@ -276,7 +281,7 @@ class Session:
         pg.display.flip()
 
 
-    def step(self, actions, nb_step):
+    def step(self, actions):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.episode_done = True
@@ -287,33 +292,38 @@ class Session:
             self.draw()
             
         self.states = self.get_states()
-        self.rewards = self.get_rewards(nb_step)
+        self.rewards = self.get_rewards()
         
         if not any([car.alive for car in self.car_list]):
             self.episode_done = True
 
         return self.states[0], self.rewards[0], self.terminateds[0]
-    
+
     
     def get_states(self):
-        self.states = [[car.x, car.y, car.speed, car.angle] for car in self.car_list]
-        self.states = lib.normalisation(self.states) 
-        return self.states
+        states = []
+        for car in self.car_list:
+            dist_to_center_line = lib.distance(car.closest_projection, (car.x, car.y))
+            dist_to_center_line *= lib.position_relative(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1], (car.x, car.y)) # pour savoir si la voiture est à droite ou à gauche de la center line
+            dist_to_next_cp = lib.distance(car.checkpoints[car.last_cp + 1], (car.x, car.y))
+            # direction_next_curve = lib.distance(car.checkpoints[car.last_cp + 1], car.checkpoints[car.last_cp + 2]) 
+            direction_next_curve = lib.position_relative(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1], car.checkpoints[car.last_cp + 2]) # pour savoir si le prochain virage est à droite (1) ou gauche (-1)
+            angle_to_center_line = lib.center_angle(car.angle - (360 - lib.angle_segment(car.checkpoints[car.last_cp], car.checkpoints[car.last_cp + 1])) % 360)
+            states.append([car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve, angle_to_center_line])
+        return states  
 
 
-    def get_rewards(self, nb_step):
+    def get_rewards(self):
         step_reward = 0
         for i, car in enumerate(self.car_list):
-            self.rewards[i] -= 0.01
+            self.rewards[i] -= 0.1
             
             step_reward = self.rewards[i] - self.prev_reward[i]
             self.prev_reward[i] = self.rewards[i]
             
             if not car.alive:
-                step_reward = -10
+                step_reward = -100
                 self.terminateds[i] = True
-            
-            # reward pour chaque cp atteint
         
         return step_reward
     

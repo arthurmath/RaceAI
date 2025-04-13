@@ -25,7 +25,7 @@ class DQN(nn.Module):
 
 class ReplayMemory():
     def __init__(self):
-        self.memory = deque([], maxlen=10_000)
+        self.memory = deque(maxlen=10_000)
 
     def append(self, transition):
         self.memory.append(transition)
@@ -40,23 +40,23 @@ class ReplayMemory():
 class DQL():
     # Hyperparameters 
     alpha = 0.01                    # learning rate
-    gamma = 0.95                     # discount rate
+    gamma = 0.95                    # discount rate
     network_sync_rate = 500         # number of steps the agent takes before syncing the policy and target network
     batch_size = 32                 # size of the data set sampled from the replay memory
     num_divisions = 30
     min_eps = 0.1
-    nb_episodes = 10000
+    nb_episodes = 10_000
     
     def __init__(self, render):
         self.env = Session(nb_cars=1, display=render)
         self.num_states = len(self.env.observation_space) # 4: x, y, speed, angle
         self.num_actions = len(self.env.action_space) # 4: up, down, left, right
 
-        # Divide position and velocity into segments
-        self.x_space = np.linspace(self.env.observation_space[0][0], self.env.observation_space[0][1], self.num_divisions) 
-        self.y_space = np.linspace(self.env.observation_space[1][0], self.env.observation_space[1][1], self.num_divisions)
-        self.speed_space = np.linspace(self.env.observation_space[2][0], self.env.observation_space[2][1], self.num_divisions)
-        self.angle_space = np.linspace(self.env.observation_space[3][0], self.env.observation_space[3][1], self.num_divisions)
+        # # Divide position and velocity into segments
+        # self.x_space = np.linspace(self.env.observation_space[0][0], self.env.observation_space[0][1], self.num_divisions) 
+        # self.y_space = np.linspace(self.env.observation_space[1][0], self.env.observation_space[1][1], self.num_divisions)
+        # self.speed_space = np.linspace(self.env.observation_space[2][0], self.env.observation_space[2][1], self.num_divisions)
+        # self.angle_space = np.linspace(self.env.observation_space[3][0], self.env.observation_space[3][1], self.num_divisions)
 
 
     def train(self, filepath):
@@ -82,7 +82,6 @@ class DQL():
             state = self.env.reset(episode)
             terminated = False   # True when agent falls in hole or reached goal
             rewards = 0
-            step_count = 0
 
             # Agent navigates map until it falls into hole/reaches goal (terminated), or has taken 200 actions (truncated).
             while not terminated:
@@ -93,11 +92,11 @@ class DQL():
                     #print('random', action)
                 else:
                     with torch.no_grad():
-                        action = policy_dqn(self.normalisation(state)).argmax().item()
+                        action = policy_dqn(state).argmax().item()
                     #print('nn',action)
 
                 # Execute action
-                new_state, reward, terminated = self.env.step(action, step_count)
+                new_state, reward, terminated = self.env.step(action)
 
                 # Save experience into memory
                 memory.append((state, action, new_state, reward, terminated))
@@ -107,7 +106,6 @@ class DQL():
                 state = new_state
                 
                 rewards += reward
-                step_count += 1
                 
                 if self.env.episode_done:
                     break
@@ -154,7 +152,6 @@ class DQL():
                 # When in a terminated state, target q value should be set to the reward.
                 target = torch.FloatTensor([reward])
             else:
-                # Calculate target q value 
                 with torch.no_grad():
                     target = torch.FloatTensor(
                         reward + self.gamma * target_dqn(self.normalisation(new_state)).max()
@@ -188,21 +185,27 @@ class DQL():
         state_s = np.digitize(state[2], self.speed_space)
         state_a = np.digitize(state[3], self.angle_space)
         return torch.FloatTensor([state_x, state_y, state_s, state_a])
-
-    def normalisation(self, state):
+    
+    def normalisation(state):
         """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
-        list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
+        list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
         state = [lib.scale(state[i], *list_ranges[i]) for i in range(len(state))]
-        return state
+        return torch.FloatTensor(state)
     
             
     def plot_progress(self, rewards_per_episode, epsilon_history):
-        plt.figure(1)
-        plt.subplot(121) # plot on a 1 row * 2 col grid, at cell 1
+        plt.figure(figsize=(8, 4))
+        plt.subplot(211) # plot on a 2 row * 1 col grid, at cell 1
         plt.plot(rewards_per_episode)
-        plt.subplot(122) # cell 2
+        plt.xlabel("Episode")
+        plt.ylabel("Episode rewards total")
+        plt.subplot(212) # cell 2
         plt.plot(epsilon_history)
-        plt.savefig(f'rewards_episodes_{len(epsilon_history)}.png')
+        plt.xlabel("Episode")
+        plt.ylabel("Epsilon")
+        plt.tight_layout()
+        plt.savefig(f'rewards_episode_{len(epsilon_history)}.png')
+        
     
     
     # Run the environment with the learned policy
@@ -214,15 +217,13 @@ class DQL():
         policy_dqn.eval()    # switch model to evaluation mode
 
         state = self.env.reset()
-        terminated = False      # True when agent falls in hole or reached goal
-        step_count = 0          
+        terminated = False      # True when agent falls in hole or reached goal   
 
         while not terminated:
             with torch.no_grad():
                 action = policy_dqn(self.normalisation(state)).argmax().item()
 
-            state, reward, terminated = self.env.step(action, step_count)
-            step_count += 1
+            state, reward, terminated = self.env.step(action)
                 
         self.env.close()
 

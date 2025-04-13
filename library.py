@@ -92,7 +92,7 @@ def project_point_on_segment(p, a, b):
 
 def normalisation(states):
     """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
-    list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [0, 100]]
+    list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
     states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
     return states
 

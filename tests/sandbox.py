@@ -21,17 +21,37 @@ rd.seed(42)
 # print(dqn.model.predict(vec).shape)
 
 
-x_space = np.linspace(0, 1200, 30)
+# x_space = np.linspace(0, 1200, 30)
+# print(np.digitize(1000, x_space))
 
-state_x = np.digitize(1000, x_space)
 
 
-L1 = np.arange(50)
-L2 = np.arange(50, 100)
+# L1 = np.arange(50)
+L2 = np.arange(50, 100, -1)
+
+# plt.figure(1)
+# plt.subplot(121) # plot on a 1 row * 2 col grid, at cell 1
+# plt.plot(L1)
+# plt.subplot(122) # cell 2
+# plt.plot(L2)
+# plt.savefig(f'raceAI_dql_.png')
+
+
+
+
+x = np.arange(1100)
+y = -11.5 + np.random.randn(1100) * (1 / (x + 1)**0.3) + np.log(x + 1) / 5
+
+def window_average(y, win):
+    return [sum(y[i : i+win]) / win for i in range(len(y) - win)]
+
+win = 100
+average = window_average(y, win)
 
 plt.figure(1)
-plt.subplot(121) # plot on a 1 row * 2 col grid, at cell 1
-plt.plot(L1)
-plt.subplot(122) # cell 2
-plt.plot(L2)
-plt.savefig(f'raceAI_dql_.png')
+#plt.subplot(211) # plot on a 1 row * 2 col grid, at cell 1
+plt.plot(x, y, color='blue')
+#plt.subplot(212) # cell 2
+plt.plot(x[int(win / 2):-int(win / 2)], average, color='black')
+plt.tight_layout()
+plt.show()
