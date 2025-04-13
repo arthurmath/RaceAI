@@ -26,7 +26,6 @@ class Car:
         self.rotation_speed = 9
         self.max_speed = 10
         self.progression = 0
-        self.old_progression = 0
         self.alive = True
         
         self.car_img = ses.car_img
@@ -37,11 +36,6 @@ class Car:
         self.collision = 0
         self.compteur = 0 # pour les collisions
         
-        # self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
-        #                     (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
-        #                     (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
-        #                     (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]
-        
         self.checkpoints = [(240, 274), (240, 213), (239, 131), (300, 76), (364, 131), (365, 194), (365, 297), (366, 392), 
                             (421, 459), (482, 398), (481, 316), (481, 226), (480, 128), (532, 78), (627, 78), (721, 78), 
                             (824, 79), (942, 80), (991, 128), (991, 239), (941, 282), (859, 281), (766, 280), (678, 280), 
@@ -51,65 +45,60 @@ class Car:
                             (316, 610), (262, 553), (239, 487), (239, 422), (239, 353)]
 
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
-        
-        self.validate_checkpoint = 0
-        self.checkpoints_radius = 45
         self.traveled_distance = 0
-        self.last_traveled_distance = 0
-        self.last_position = (self.x, self.y)
-        self.ortho_sys_y = ((300, 40), (300, 130))
-        self.ortho_sys_x = ((300, 130), (400, 130))
-        self.behind_cp = False
-        self.in_checkpoint = False
         self.closest_projection = self.initial_pos
-        self.last_cp = 0
         self.finish_rect = ses.finish_img.get_rect(topleft=(200, 330))
+        self.last_cp = 0
         self.current_cp = 0
+        self.border_pos = ses.border_pos
+        self.border_mask = ses.border_mask
 
         
         
     def update(self, actions: list[int]):
-    
-        moved = False  
-        self.progression = self.get_progression()
-        if self.last_cp > self.current_cp:
-            self.ses.rewards[0] += 1000 / len(self.checkpoints)
-            self.current_cp = self.last_cp
-             
+        moved = False               
         
-        if 1 in actions:
+        # Apply action to car's physics
+        if 1 in actions: # left
             self.angle = (self.angle + self.rotation_speed) % 360
-        if 2 in actions:
+        if 2 in actions: # right
             self.angle = (self.angle - self.rotation_speed) % 360
-        if 0 in actions:
+        if 0 in actions: # up
             self.speed = min(self.speed + self.acceleration, self.max_speed)
             moved = True
-        if 3 in actions:
+        if 3 in actions: # down
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
             moved = True
 
-
-        if not moved: # inertie
+        # Change speed
+        if not moved: # inertia
             if self.speed > 0:
                 self.speed = max(self.speed - self.acceleration, 0)
             else:
                 self.speed = min(self.speed + self.acceleration, 0)
                 
-
+        # Kill car if it collided with borders or finish line
         if self.collision != 0 or self.car_rect.colliderect(self.finish_rect):
             self.alive = False
-            if self.compteur < 0: # permet d'éviter de detecter les collisions trop rapidement (= 30 fois/sec), sinon bug
+            if self.compteur < 0: # don't detect collisions too quickly (=30 times/sec), else bug
                 self.speed = - self.speed / 2
                 self.compteur = 4
         self.compteur -= 1
+        
+        # Detect collisions with borders
+        car_mask = pg.mask.from_surface(self.car_rotated)
+        offset = (int(self.x - self.border_pos[0] - 10), int(self.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
+        booleen = self.border_mask.overlap(car_mask, offset)
+        self.collision = 0 if booleen == None else 1
             
+        # Change car position
         rad = math.radians(self.angle)
         self.y -= self.speed * math.cos(rad) 
         self.x -= self.speed * math.sin(rad) 
         
     
     def get_progression(self):
-        # Trouver la projection du point sur le tracé
+        # Finds the car's position projection on the center line
         min_dist = float('inf')
         car_pos = self.x, self.y
         for i in range(len(self.checkpoints) - 1):
@@ -124,87 +113,13 @@ class Car:
         return (traveled_distance / self.total_distance) * 100 
     
     
-    def draw(self, ses, i):
+    def draw(self, ses):
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
         self.car_rect = self.car_rotated.get_rect(center=self.car_img.get_rect(topleft=(self.x, self.y)).center)
         ses.screen.blit(self.car_rotated, self.car_rect.topleft)
         
-        # pg.draw.rect(ses.screen, (255, 0, 0), self.car_rect, 2) # heatbox
-        # ses.screen.blit(show_mask(self.car_rotated), (self.car_rect.x, self.car_rect.y)) # mask 
         
 
-    def reset(self):
-        self.x, self.y = self.initial_pos
-        self.speed = 0
-        self.angle = 0
-        
-        
-
-
-class Background:
-    def __init__(self, ses):
-        self.back = ses.background_img
-        self.track = ses.track_img
-        self.border = ses.border_img
-        self.finish = ses.finish_img
-        self.border_pos = (170, -10)
-        self.border_mask = pg.mask.from_surface(self.border)
-        # self.border_mask_img = show_mask(self.border)
-        
-    def update(self, car_list):
-        for car in car_list:
-            self.car_mask = pg.mask.from_surface(car.car_rotated)
-            offset = (int(car.x - self.border_pos[0] - 10), int(car.y - self.border_pos[1])) # correspond à la différence des coordonnées des 2 masques.
-            booleen = self.border_mask.overlap(self.car_mask, offset)
-            car.collision = 0 if booleen == None else 1
-        
-    def draw(self, ses, car):
-        ses.screen.blit(self.back, (0, 0))
-        ses.screen.blit(self.track, self.border_pos)
-        ses.screen.blit(self.border, self.border_pos)
-        ses.screen.blit(self.finish, (200, 330))
-        
-        for checkpoint in car.checkpoints:
-            pg.draw.circle(ses.screen, (0, 255, 0), checkpoint, 5)
-            
-        # ses.screen.blit(self.border_mask_img, self.border_pos) # mask
-        
-        
-        
-
-
-
-class Score:
-    def __init__(self, background, ses):
-        self.start_ticks = pg.time.get_ticks() 
-        self.background = background
-        self.ses = ses
-        self.font = pg.font.Font(pg.font.match_font('arial'), 20)
-        
-        
-    def draw(self, ses): 
-        
-        # affichage du timer
-        text = f"Reward : {ses.rewards[0]:.2f}s"
-        text_surface = self.font.render(text, True, WHITE)
-        text_rect = text_surface.get_rect()
-        text_rect.topleft = (60, 770)
-        ses.screen.blit(text_surface, text_rect)
-        
-        # affichage high score
-        text1 = f"Generation : {self.ses.generation+1}"
-        text_surface1 = self.font.render(text1, True, WHITE)
-        text_rect1 = text_surface1.get_rect()
-        text_rect1.topleft = (60, 750)
-        ses.screen.blit(text_surface1, text_rect1)
-        
-        # affichage population
-        text2 = f"Population : {self.ses.nb_alive}"
-        text_surface2 = self.font.render(text2, True, WHITE)
-        text_rect2 = text_surface2.get_rect() 
-        text_rect2.topleft = (60, 730)
-        ses.screen.blit(text_surface2, text_rect2)
-        
 
 
 
@@ -220,6 +135,8 @@ class Session:
         self.action_space = [0, 1, 2, 3]
         
         pg.init()
+        self.score_font = pg.font.Font(pg.font.match_font('arial'), 20)
+        self.border_pos = (170, -10)
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption('Race AI')
@@ -239,6 +156,7 @@ class Session:
         self.border_img = pg.image.load('media/track-border.png').convert_alpha()
         img_width, img_height = self.border_img.get_size()
         self.border_img = pg.transform.scale(self.border_img, (img_width, img_height))
+        self.border_mask = pg.mask.from_surface(self.border_img)
         
         self.background_img = pg.image.load('media/background.jpg').convert()
         self.background_img = pg.transform.scale(self.background_img, (WIDTH, HEIGHT))
@@ -255,29 +173,47 @@ class Session:
         self.rewards = [0] * self.nb_pilots
         self.prev_rewards = [0] * self.nb_pilots
         self.terminateds = [False] * self.nb_pilots
-        self.generate_objects()
+        self.car_list = [Car(self) for _ in range(self.nb_pilots)]
         return self.get_states()[0]
         
-    def generate_objects(self):
-        self.car_list = [Car(self) for _ in range(self.nb_pilots)]
-        self.background = Background(self)
-        self.score = Score(self.background, self)        
-        
-    def update(self, actions):
-        actions = [[actions]]
-        for idx, car in enumerate(self.car_list):
-            if len(actions) != 0 and car.alive:
-                car.update(actions[idx])
-        self.nb_alive = sum([car.alive for car in self.car_list])
-        self.background.update(self.car_list)
-        self.clock.tick(FPS)
     
     def draw(self):
-        self.background.draw(self, self.car_list[0])
-        for i, car in enumerate(self.car_list):
+        # Draw background
+        self.screen.blit(self.background_img, (0, 0))
+        self.screen.blit(self.track_img, self.border_pos)
+        self.screen.blit(self.border_img, self.border_pos)
+        self.screen.blit(self.finish_img, (200, 330))
+        
+        # Draw checkpoints
+        for checkpoint in self.car_list[0].checkpoints:
+            pg.draw.circle(self.screen, (0, 255, 0), checkpoint, 5)
+            
+        # Draw reward
+        text = f"Reward : {self.rewards[0]:.2f}s"
+        text_surface = self.score_font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.topleft = (60, 770)
+        self.screen.blit(text_surface, text_rect)
+        
+        # Draw generation number
+        text1 = f"Generation : {self.generation+1}"
+        text_surface1 = self.score_font.render(text1, True, WHITE)
+        text_rect1 = text_surface1.get_rect()
+        text_rect1.topleft = (60, 750)
+        self.screen.blit(text_surface1, text_rect1)
+        
+        # Draw car number
+        text2 = f"Population : {self.nb_alive}"
+        text_surface2 = self.score_font.render(text2, True, WHITE)
+        text_rect2 = text_surface2.get_rect() 
+        text_rect2.topleft = (60, 730)
+        self.screen.blit(text_surface2, text_rect2)
+    
+        # Draw cars
+        for car in self.car_list:
             if car.alive:
-                car.draw(self, i)
-        self.score.draw(self)
+                car.draw(self)
+                
         pg.display.flip()
 
 
@@ -287,17 +223,25 @@ class Session:
                 self.episode_done = True
                 self.quit = True
         
-        self.update(actions)
+        # Apply action to each cars
+        actions = [[actions]]
+        for idx, car in enumerate(self.car_list):
+            if len(actions) != 0 and car.alive:
+                car.update(actions[idx])
+        
         if self.display:
             self.draw()
             
         self.states = self.get_states()
-        self.rewards = self.get_rewards()
+        step_rewards = self.get_rewards()
         
-        if not any([car.alive for car in self.car_list]):
+        self.nb_alive = sum([car.alive for car in self.car_list])
+        if self.nb_alive == 0:
             self.episode_done = True
+        
+        self.clock.tick(FPS)
 
-        return self.states[0], self.rewards[0], self.terminateds[0]
+        return self.states[0], step_rewards[0], self.terminateds[0]
 
     
     def get_states(self):
@@ -314,18 +258,25 @@ class Session:
 
 
     def get_rewards(self):
-        step_reward = 0
+        step_rewards = []
         for i, car in enumerate(self.car_list):
+            
+            car.progression = car.get_progression()
+            if car.last_cp > car.current_cp:
+                self.rewards[i] += 1000 / len(car.checkpoints)
+                car.current_cp = car.last_cp
+                
             self.rewards[i] -= 0.1
             
-            step_reward = self.rewards[i] - self.prev_reward[i]
-            self.prev_reward[i] = self.rewards[i]
+            step_reward = self.rewards[i] - self.prev_rewards[i]
+            self.prev_rewards[i] = self.rewards[i]
             
             if not car.alive:
                 step_reward = -100
                 self.terminateds[i] = True
+            step_rewards.append(step_reward)
         
-        return step_reward
+        return step_rewards
     
     def close(self):
         pg.quit()
@@ -342,3 +293,17 @@ class Session:
         
 
 
+
+
+
+
+
+
+
+
+
+
+# self.checkpoints = [(239, 273), (239, 130), (300, 75), (360, 130), (370, 392), (420, 451), (479, 389), (482, 126), 
+#                     (531, 74), (941, 80), (988, 127), (989, 240), (940, 278), (680, 277), (614, 341), (681, 386), 
+#                     (941, 399), (986, 440), (987, 750), (941, 800), (890, 800), (840, 751), (831, 583), (780, 532), 
+#                     (680, 533), (634, 582), (611, 760), (570, 797), (301, 585), (236, 436)]

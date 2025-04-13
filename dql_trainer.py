@@ -25,16 +25,16 @@ class DQN(nn.Module):
 
 class ReplayMemory():
     def __init__(self):
-        self.memory = deque(maxlen=10_000)
+        self.buffer = deque(maxlen=10_000)
 
     def append(self, transition):
-        self.memory.append(transition)
+        self.buffer.append(transition)
 
     def sample(self, sample_size):
-        return random.sample(self.memory, sample_size)
+        return random.sample(self.buffer, sample_size)
 
     def __len__(self):
-        return len(self.memory)
+        return len(self.buffer)
 
 
 class DQL():
@@ -43,7 +43,6 @@ class DQL():
     gamma = 0.95                    # discount rate
     network_sync_rate = 500         # number of steps the agent takes before syncing the policy and target network
     batch_size = 32                 # size of the data set sampled from the replay memory
-    num_divisions = 30
     min_eps = 0.1
     nb_episodes = 10_000
     
@@ -51,12 +50,6 @@ class DQL():
         self.env = Session(nb_cars=1, display=render)
         self.num_states = len(self.env.observation_space) # 4: x, y, speed, angle
         self.num_actions = len(self.env.action_space) # 4: up, down, left, right
-
-        # # Divide position and velocity into segments
-        # self.x_space = np.linspace(self.env.observation_space[0][0], self.env.observation_space[0][1], self.num_divisions) 
-        # self.y_space = np.linspace(self.env.observation_space[1][0], self.env.observation_space[1][1], self.num_divisions)
-        # self.speed_space = np.linspace(self.env.observation_space[2][0], self.env.observation_space[2][1], self.num_divisions)
-        # self.angle_space = np.linspace(self.env.observation_space[3][0], self.env.observation_space[3][1], self.num_divisions)
 
 
     def train(self, filepath):
@@ -92,7 +85,7 @@ class DQL():
                     #print('random', action)
                 else:
                     with torch.no_grad():
-                        action = policy_dqn(state).argmax().item()
+                        action = policy_dqn(self.normalisation(state)).argmax().item()
                     #print('nn',action)
 
                 # Execute action
@@ -136,7 +129,7 @@ class DQL():
                 if episode % self.network_sync_rate == 0:
                     target_dqn.load_state_dict(policy_dqn.state_dict())
 
-            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {reward:>6.2f}, memory: {len(memory)}')
+            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {rewards:>6.2f}, memory: {len(memory)}')
 
         self.env.close()
         
@@ -177,19 +170,9 @@ class DQL():
         self.optimizer.step()
 
     
-    def state_to_dqn_input(self, state) -> torch.Tensor:
-        ''' Converts a state (position, velocity) to tensor representation.
-        Example: Input = (0.3, -0.03) -> Return = tensor([16, 6]) '''
-        state_x = np.digitize(state[0], self.x_space)
-        state_y = np.digitize(state[1], self.y_space)
-        state_s = np.digitize(state[2], self.speed_space)
-        state_a = np.digitize(state[3], self.angle_space)
-        return torch.FloatTensor([state_x, state_y, state_s, state_a])
-    
-    def normalisation(state):
+    def normalisation(self, state):
         """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
-        list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
-        state = [lib.scale(state[i], *list_ranges[i]) for i in range(len(state))]
+        state = [lib.scale(state[i], *self.env.observation_space[i]) for i in range(len(state))]
         return torch.FloatTensor(state)
     
             
@@ -239,3 +222,26 @@ if __name__ == '__main__':
     
     
     
+
+
+
+
+
+
+
+
+# num_divisions = 30
+# # Divide position and velocity into segments
+# self.x_space = np.linspace(self.env.observation_space[0][0], self.env.observation_space[0][1], self.num_divisions) 
+# self.y_space = np.linspace(self.env.observation_space[1][0], self.env.observation_space[1][1], self.num_divisions)
+# self.speed_space = np.linspace(self.env.observation_space[2][0], self.env.observation_space[2][1], self.num_divisions)
+# self.angle_space = np.linspace(self.env.observation_space[3][0], self.env.observation_space[3][1], self.num_divisions)
+
+# def state_to_dqn_input(self, state) -> torch.Tensor:
+#     ''' Converts a state (position, velocity) to tensor representation.
+#     Example: Input = (0.3, -0.03) -> Return = tensor([16, 6]) '''
+#     state_x = np.digitize(state[0], self.x_space)
+#     state_y = np.digitize(state[1], self.y_space)
+#     state_s = np.digitize(state[2], self.speed_space)
+#     state_a = np.digitize(state[3], self.angle_space)
+#     return torch.FloatTensor([state_x, state_y, state_s, state_a])
