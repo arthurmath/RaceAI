@@ -21,7 +21,7 @@ epsilon2 = [1]
 for episode in range(NUM_EPISODES):
     epsilon1.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * episode / EPS_DECAY))
     #epsilon2.append(max(1 - episode / EPS_FACTOR, EPS_MIN))
-    epsilon2.append(max(epsilon2[-1] - 2.5 / NUM_EPISODES, EPS_MIN))
+    epsilon2.append(max(epsilon2[-1] - 4 / NUM_EPISODES, EPS_MIN))
 
 
 plt.figure(figsize=(8, 4))

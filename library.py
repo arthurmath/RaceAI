@@ -92,7 +92,7 @@ def project_point_on_segment(p, a, b):
 
 def normalisation(states):
     """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
-    list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360], [0, 100]]
+    list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
     states = [[scale(state[i], *list_ranges[i]) for i in range(len(state))] for state in states]
     return states
 
@@ -137,3 +137,18 @@ def center_angle(angle):
         return angle + 360
     else:
         return angle - 360
+
+def window_average(y, win=100):
+    return [sum(y[i : i+win]) / win for i in range(len(y) - win)]
+
+def moving_average(rewards):
+    len_window = 100
+    moyenne_mobile = []
+    for i in range(len(rewards)):
+        if i < len_window:
+            start_index = 0
+        else:
+            start_index = i - len_window + 1
+        window = rewards[start_index: i + 1]
+        moyenne_mobile.append(sum(window) / len(window))
+    return moyenne_mobile
