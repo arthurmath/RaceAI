@@ -45,9 +45,9 @@ def moving_average(rewards_per_episode):
 win = 100
 plt.figure()
 plt.plot(y)
-plt.plot(x, moving_average(y, win), color='black')
+plt.plot(x, moving_average(y), color='black')
 x = np.arange(int(win / 2), len(y)-int(win / 2))
-plt.plot(x, window_average(y))
+plt.plot(x, window_average(y, win))
 plt.title("Rewards sum per episode")
 plt.xlabel("Episode")
 plt.ylabel("Rewards")

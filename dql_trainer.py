@@ -183,11 +183,9 @@ class DQL():
     
             
     def plot_progress(self, rewards):
-        win = 100
-        x = np.arange(int(win/2), len(rewards) - int(win/2))
         plt.figure()
         plt.plot(rewards, label='Rewards')
-        plt.plot(x, lib.window_average(rewards, win), color='black', label='Window average')
+        plt.plot(lib.moving_average(rewards), color='black', label='Window average')
         plt.title("Rewards sum per episode")
         plt.xlabel("Episode")
         plt.ylabel("Rewards")
