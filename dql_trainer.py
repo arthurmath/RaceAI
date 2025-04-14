@@ -7,6 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 from dql_game import Session
 import library as lib
+#from tests.sandbox import moving_average
 
 
 class DQN(nn.Module):
@@ -42,10 +43,11 @@ class DQL():
     alpha = 0.01                    # learning rate
     gamma = 0.95                     # discount rate
     network_sync_rate = 500         # number of steps the agent takes before syncing the policy and target network
-    batch_size = 32                 # size of the data set sampled from the replay memory
+    batch_size = 64                 # size of the data set sampled from the replay memory
     num_divisions = 30
-    min_eps = 0.1
-    nb_episodes = 10000
+    min_eps = 0
+    nb_episodes = 1000
+    fenetre = 100
     
     def __init__(self, render):
         self.env = Session(nb_cars=1, display=render)
@@ -131,14 +133,14 @@ class DQL():
                 self.optimize(mini_batch, policy_dqn, target_dqn)        
 
                 # Decay epsilon
-                epsilon = max(epsilon - 4 / self.nb_episodes, self.min_eps)
+                epsilon = max(epsilon - 5 / self.nb_episodes, self.min_eps)
                 epsilon_history.append(epsilon)
 
                 # Copy policy network to target network after a certain number of episodes
                 if episode % self.network_sync_rate == 0:
                     target_dqn.load_state_dict(policy_dqn.state_dict())
 
-            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {reward:>6.2f}, memory: {len(memory)}')
+            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {rewards:>6.2f}, memory: {len(memory)}')
 
         self.env.close()
         
@@ -193,16 +195,41 @@ class DQL():
         """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
         list_ranges = [[0, 1200], [0, 900], [-5, 10], [0, 360]]
         state = [lib.scale(state[i], *list_ranges[i]) for i in range(len(state))]
-        return state
-    
-            
+        return torch.FloatTensor(state)
+
+
+    def moving_average(self, rewards_per_episode):
+        moyenne_mobile = []
+        for i in range(len(rewards_per_episode)):
+            if i < self.fenetre:
+                start_index = 0
+            else:
+                start_index = i - self.fenetre + 1
+            window = rewards_per_episode[start_index: i + 1]  # on selectionne la fenêtre pour faire la moyenne
+            #print(window)
+            moyenne = sum(window) / len(window)
+            #print(moyenne)
+            moyenne_mobile.append(moyenne)
+            #print(moyenne_mobile)
+        return moyenne_mobile
+
+
     def plot_progress(self, rewards_per_episode, epsilon_history):
         plt.figure(1)
         plt.subplot(121) # plot on a 1 row * 2 col grid, at cell 1
-        plt.plot(rewards_per_episode)
+        plt.plot(rewards_per_episode, label= 'rewards bruts')
+        ma = self.moving_average(rewards_per_episode)
+        plt.plot(ma, label = f'Moyenne Mobile_fenetre= {self.fenetre}')
         plt.subplot(122) # cell 2
         plt.plot(epsilon_history)
         plt.savefig(f'rewards_episodes_{len(epsilon_history)}.png')
+
+
+
+
+
+
+
     
     
     # Run the environment with the learned policy
