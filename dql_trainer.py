@@ -1,12 +1,28 @@
 import numpy as np
+import random as rd
 import matplotlib.pyplot as plt
 from collections import deque
-import random
 import torch
 from torch import nn
 import torch.nn.functional as F
 from dql_game import Session
 import library as lib
+
+
+
+LR = 0.01                    # learning rate
+GAMMA = 0.95                 # discount rate
+SYNC_RATE = 500              # number of steps the agent takes before syncing target with policy network
+BATCH_SIZE = 32              # size of the data set sampled from the replay memory
+EPS_DECAY = 4                # epsilon decay rate 
+EPS_MIN = 0.1                # minimum value of epsilon
+NUM_EPISODES = 10_000        # number of episodes
+MEMORY_LEN = 10_000          # size of the buffer
+PLOT_RATE = 100              # when to plot rewards
+
+rd.seed(0)
+
+
 
 
 class DQN(nn.Module):
@@ -19,33 +35,25 @@ class DQN(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))     # Apply rectified linear unit (ReLU) activation
         x = F.relu(self.fc2(x))
-        x = F.relu(self.out(x))     # Calculate output
+        x = F.relu(self.out(x))
         return x
 
 
 class ReplayMemory():
     def __init__(self):
-        self.buffer = deque(maxlen=10_000)
+        self.buffer = deque(maxlen=MEMORY_LEN)
 
     def append(self, transition):
         self.buffer.append(transition)
 
-    def sample(self, sample_size):
-        return random.sample(self.buffer, sample_size)
+    def sample(self):
+        return rd.sample(self.buffer, BATCH_SIZE)
 
     def __len__(self):
         return len(self.buffer)
 
 
-class DQL():
-    # Hyperparameters 
-    alpha = 0.01                    # learning rate
-    gamma = 0.95                    # discount rate
-    network_sync_rate = 500         # number of steps the agent takes before syncing the policy and target network
-    batch_size = 32                 # size of the data set sampled from the replay memory
-    min_eps = 0.1
-    nb_episodes = 10_000
-    
+class DQL(): 
     def __init__(self, render):
         self.env = Session(nb_cars=1, display=render)
         self.num_states = len(self.env.observation_space) # 4: x, y, speed, angle
@@ -61,32 +69,32 @@ class DQL():
         target_dqn = DQN(self.num_states, self.num_actions)
         target_dqn.load_state_dict(policy_dqn.state_dict()) # Copy weights/biases from policy to the target
         
-        self.optimizer = torch.optim.Adam(policy_dqn.parameters(), lr=self.alpha)
+        self.optimizer = torch.optim.Adam(policy_dqn.parameters(), lr=LR)
         self.loss_fn = nn.MSELoss()
 
         # List to keep track of rewards and epsilon. 
         rewards_per_episode = []
-        epsilon_history = []
 
         # Track number of steps taken. Used for syncing policy => target network.
         best_rewards = - float('inf')
             
-        for episode in range(self.nb_episodes):
+        for episode in range(1, NUM_EPISODES):
             state = self.env.reset(episode)
             terminated = False   # True when agent falls in hole or reached goal
             rewards = 0
+            step = 0
 
-            # Agent navigates map until it falls into hole/reaches goal (terminated), or has taken 200 actions (truncated).
-            while not terminated:
+            # Agent navigates map until it collides a wall/reaches goal (terminated), or has taken 200 actions (truncated).
+            while not terminated and step < 200:
 
                 # Select action based on epsilon-greedy
-                if random.random() < epsilon:
-                    action = np.random.choice(self.env.action_space, p=[0.5, 0.2, 0.2, 0.1]) # on favorise l'action up
+                if rd.random() < epsilon:
+                    action = rd.choices(self.env.action_space, weights=[0.5, 0.2, 0.2, 0.1])[0] # on favorise l'action up
                     #print('random', action)
                 else:
                     with torch.no_grad():
                         action = policy_dqn(self.normalisation(state)).argmax().item()
-                    #print('nn',action)
+                        # print('nn',action)
 
                 # Execute action
                 new_state, reward, terminated = self.env.step(action)
@@ -95,10 +103,9 @@ class DQL():
                 memory.append((state, action, new_state, reward, terminated))
                 #print((state, action, new_state, reward, terminated))
 
-                # Move to the next state
                 state = new_state
-                
                 rewards += reward
+                step += 1
                 
                 if self.env.episode_done:
                     break
@@ -109,27 +116,26 @@ class DQL():
             rewards_per_episode.append(rewards)
 
             # Graph training progress
-            if episode != 0 and episode % 100 == 0:
-                self.plot_progress(rewards_per_episode, epsilon_history)
+            if episode % PLOT_RATE == 0:
+                self.plot_progress(rewards_per_episode)
             
             if rewards > best_rewards:
                 best_rewards = rewards
                 torch.save(policy_dqn.state_dict(), filepath)
 
             # Check if enough experience has been collected
-            if len(memory) > self.batch_size:
-                mini_batch = memory.sample(self.batch_size)
+            if len(memory) > BATCH_SIZE:
+                mini_batch = memory.sample()
                 self.optimize(mini_batch, policy_dqn, target_dqn)        
 
                 # Decay epsilon
-                epsilon = max(epsilon - 4 / self.nb_episodes, self.min_eps)
-                epsilon_history.append(epsilon)
+                epsilon = max(epsilon - EPS_DECAY / NUM_EPISODES, EPS_MIN)
 
-                # Copy policy network to target network after a certain number of episodes
-                if episode % self.network_sync_rate == 0:
+                # Copy policy network weights to target network
+                if episode % SYNC_RATE == 0:
                     target_dqn.load_state_dict(policy_dqn.state_dict())
 
-            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {rewards:>6.2f}, memory: {len(memory)}')
+            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward: {rewards:>7.2f}, memory: {len(memory)}')
 
         self.env.close()
         
@@ -147,7 +153,7 @@ class DQL():
             else:
                 with torch.no_grad():
                     target = torch.FloatTensor(
-                        reward + self.gamma * target_dqn(self.normalisation(new_state)).max()
+                        reward + GAMMA * target_dqn(self.normalisation(new_state)).max()
                     )
 
             # Get the current set of Q values
@@ -171,29 +177,26 @@ class DQL():
 
     
     def normalisation(self, state):
-        """ Il faut que les entrées du NN soient dans [-1, 1] pour converger """
+        """ Scales nn inputs to [-1, 1] for better convergence """
         state = [lib.scale(state[i], *self.env.observation_space[i]) for i in range(len(state))]
         return torch.FloatTensor(state)
     
             
-    def plot_progress(self, rewards_per_episode, epsilon_history):
-        plt.figure(figsize=(8, 4))
-        plt.subplot(211) # plot on a 2 row * 1 col grid, at cell 1
-        plt.plot(rewards_per_episode)
+    def plot_progress(self, rewards):
+        win = 100
+        x = np.arange(int(win / 2), len(rewards)-int(win / 2))
+        plt.figure()
+        plt.plot(rewards)
+        plt.plot(x, lib.window_average(rewards, win), color='black')
+        plt.title("Rewards sum per episode")
         plt.xlabel("Episode")
-        plt.ylabel("Episode rewards total")
-        plt.subplot(212) # cell 2
-        plt.plot(epsilon_history)
-        plt.xlabel("Episode")
-        plt.ylabel("Epsilon")
-        plt.tight_layout()
-        plt.savefig(f'rewards_episode_{len(epsilon_history)}.png')
+        plt.ylabel("Rewards")
+        plt.savefig(f'rewards_episode_{len(rewards)}.png')
         
     
     
     # Run the environment with the learned policy
     def test(self, filepath):
-
         # Load learned policy
         policy_dqn = DQN(self.num_states, self.num_actions) 
         policy_dqn.load_state_dict(torch.load(filepath))

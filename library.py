@@ -137,3 +137,6 @@ def center_angle(angle):
         return angle + 360
     else:
         return angle - 360
+
+def window_average(y, win=100):
+    return [sum(y[i : i+win]) / win for i in range(len(y) - win)]

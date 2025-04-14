@@ -48,10 +48,20 @@ def window_average(y, win):
 win = 100
 average = window_average(y, win)
 
-plt.figure(1)
-#plt.subplot(211) # plot on a 1 row * 2 col grid, at cell 1
-plt.plot(x, y, color='blue')
-#plt.subplot(212) # cell 2
-plt.plot(x[int(win / 2):-int(win / 2)], average, color='black')
-plt.tight_layout()
+# plt.figure()
+# plt.plot(x, y)
+# plt.plot(x[int(win / 2):-int(win / 2)], average, color='black')
+# plt.tight_layout()
+# plt.show()
+
+
+
+win = 100
+x = np.arange(int(win / 2), len(y)-int(win / 2))
+plt.figure()
+plt.plot(y)
+plt.plot(x, window_average(y, win), color='black')
+plt.title("Rewards sum per episode")
+plt.xlabel("Episode")
+plt.ylabel("Rewards")
 plt.show()
