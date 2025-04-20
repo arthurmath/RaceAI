@@ -169,7 +169,7 @@ class DQL():
                 for state in states:
                     if rd.random() < epsilon:
                         #action = rd.choices(self.env.action_space,weights=action_weights)[0]
-                        action = rd.choices(self.env.action_space, weights=[0.4,0.3,0.3,0.1])[0]
+                        action = rd.choices(self.env.action_space, weights=[0.3975,0.3,0.3,0.0025])[0]
                     else:
                         qvals = self.policy_dqn(self.normalisation(state))
                         action = int(tf.argmax(qvals, axis=1)[0])
@@ -186,7 +186,7 @@ class DQL():
                 states     = new_states
                 rewards   += sum(rewards_list)
                 step      += 1
-                terminated = any(terminated_list) or self.env.episode_done
+                terminated = all(terminated_list) or self.env.episode_done
 
             if self.env.quit: break
 
@@ -233,4 +233,4 @@ class DQL():
 if __name__ == '__main__':
     agent = DQL(render=True)
     agent.train("weights_1_tf")
-    #agent.test("weights_tf")
+    #agent.test("weights_1_tf")
