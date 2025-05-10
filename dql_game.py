@@ -4,7 +4,7 @@ import pygame as pg
 
 
 
-FPS = 150
+FPS = 40 # 150
 WIDTH = 1300
 HEIGHT = 900
 WHITE = (255, 255, 255)
@@ -28,6 +28,8 @@ class Car:
         self.compteur = 0 # pour les collisions
         self.last_cp = 0
         self.current_cp = 0
+        self.progression = 0
+        self.progression_old = 0
         
         self.car_img = ses.car_img
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
@@ -44,11 +46,11 @@ class Car:
         moved = False               
         
         # Apply action to car's physics
-        if 1 in actions: # left
+        if 0 in actions: # left
             self.angle = (self.angle + self.rotation_speed) % 360
-        if 2 in actions: # right
+        if 1 in actions: # right
             self.angle = (self.angle - self.rotation_speed) % 360
-        if 0 in actions: # up
+        if 2 in actions: # up
             self.speed = min(self.speed + self.acceleration, self.max_speed)
             moved = True
         if 3 in actions: # down
@@ -111,9 +113,8 @@ class Car:
 
 
 class Session:        
-    def __init__(self, nb_cars, display=True):
+    def __init__(self, display=True):
         self.display = display
-        self.nb_cars = nb_cars
         self.episode_done = False
         self.quit = False
         
@@ -163,11 +164,12 @@ class Session:
     def reset(self, episode=1):
         self.episode = episode
         self.episode_done = False
-        self.rewards = [0] * self.nb_cars
-        self.prev_rewards = [0] * self.nb_cars
-        self.terminateds = [False] * self.nb_cars
-        self.car_list = [Car(self) for _ in range(self.nb_cars)]
-        return self.get_states()[0]
+        self.reward = 0
+        self.prev_reward = 0
+        self.terminated = False
+        self.car = Car(self)
+        self.progression_old = self.car.get_progression(self.checkpoints)
+        return self.get_states()
         
     def draw(self):
         # Draw background
@@ -181,30 +183,29 @@ class Session:
             pg.draw.circle(self.screen, (0, 255, 0), checkpoint, 5)
         
         # Draw cars
-        for car in self.car_list:
-            if car.alive:
-                car.draw(self)    
-        
-        # Draw reward
-        text = f"Reward : {self.rewards[0]:.2f}s"
-        text_surface = self.score_font.render(text, True, WHITE)
-        text_rect = text_surface.get_rect()
-        text_rect.topleft = (60, 770)
-        self.screen.blit(text_surface, text_rect)
-        
+        if self.car.alive:
+            self.car.draw(self)   
+            
         # Draw generation number
         text1 = f"Generation : {self.episode}"
         text_surface1 = self.score_font.render(text1, True, WHITE)
         text_rect1 = text_surface1.get_rect()
-        text_rect1.topleft = (60, 750)
-        self.screen.blit(text_surface1, text_rect1)
-        
-        # Draw car number
-        text2 = f"Population : {self.nb_alive}"
+        text_rect1.topleft = (60, 730)
+        self.screen.blit(text_surface1, text_rect1) 
+            
+        # Draw progression
+        text2 = f"Progression : {self.car.progression:.2f}"
         text_surface2 = self.score_font.render(text2, True, WHITE)
         text_rect2 = text_surface2.get_rect() 
-        text_rect2.topleft = (60, 730)
+        text_rect2.topleft = (60, 750)
         self.screen.blit(text_surface2, text_rect2)
+        
+        # Draw reward
+        text = f"Reward : {self.reward:.2f}"
+        text_surface = self.score_font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.topleft = (60, 770)
+        self.screen.blit(text_surface, text_rect)
         
         self.clock.tick(FPS)  
         pg.display.flip()
@@ -216,60 +217,54 @@ class Session:
                 self.episode_done = True
                 self.quit = True
         
-        # Apply action to each cars
-        actions = [[actions]]
-        for idx, car in enumerate(self.car_list):
-            if len(actions) != 0 and car.alive:
-                car.update(actions[idx])
+        # Apply actions to the car
+        if self.car.alive:
+            self.car.update(actions)
         
-        # Check if all cars are dead
-        self.nb_alive = sum([car.alive for car in self.car_list])
-        if self.nb_alive == 0:
+        # Check if car is dead
+        if self.car.alive == False:
             self.episode_done = True
         
         # Rendering
         if self.display:
             self.draw()
             
-        self.states = self.get_states()
-        step_rewards = self.get_rewards()
+        state = self.get_states()
+        step_reward = self.get_rewards()
         
-        return self.states[0], step_rewards[0], self.terminateds[0]
+        print(f"{state[2]:.2f}")
+        
+        return state, step_reward, self.terminated
 
     
     def get_states(self):
-        states = []
-        for car in self.car_list:
-            dist_to_center_line = lib.distance(car.closest_projection, (car.x, car.y))
-            dist_to_center_line *= lib.position_relative(self.checkpoints[car.last_cp], self.checkpoints[car.last_cp + 1], (car.x, car.y)) # pour savoir si la voiture est à droite ou à gauche de la center line
-            dist_to_next_cp = lib.distance(self.checkpoints[car.last_cp + 1], (car.x, car.y))
-            # direction_next_curve = lib.distance(self.checkpoints[car.last_cp + 1], self.checkpoints[car.last_cp + 2]) 
-            direction_next_curve = lib.position_relative(self.checkpoints[car.last_cp], self.checkpoints[car.last_cp + 1], self.checkpoints[car.last_cp + 2]) # pour savoir si le prochain virage est à droite (1) ou gauche (-1)
-            angle_to_center_line = lib.center_angle(car.angle - (360 - lib.angle_segment(self.checkpoints[car.last_cp], self.checkpoints[car.last_cp + 1])) % 360)
-            states.append([car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve, angle_to_center_line])
-        return states  
-
-
-    def get_rewards(self):
-        step_rewards = []
-        for i, car in enumerate(self.car_list):
-            
-            car.progression = car.get_progression(self.checkpoints)
-            if car.last_cp > car.current_cp:
-                self.rewards[i] += 1000 / len(self.checkpoints)
-                car.current_cp = car.last_cp
-                
-            self.rewards[i] -= 0.1
-            
-            step_reward = self.rewards[i] - self.prev_rewards[i]
-            self.prev_rewards[i] = self.rewards[i]
-            
-            if not car.alive:
-                step_reward = -100
-                self.terminateds[i] = True
-            step_rewards.append(step_reward)
+        dist_to_center_line = lib.distance(self.car.closest_projection, (self.car.x, self.car.y))
+        dist_to_center_line *= lib.position_relative(self.checkpoints[self.car.last_cp], self.checkpoints[self.car.last_cp + 1], (self.car.x, self.car.y)) # pour savoir si la voiture est à droite ou à gauche de la center line
+        dist_to_next_cp = lib.distance(self.checkpoints[self.car.last_cp + 1], (self.car.x, self.car.y))
+        # direction_next_curve = lib.distance(self.checkpoints[car.last_cp + 1], self.checkpoints[car.last_cp + 2]) 
+        direction_next_curve = lib.position_relative(self.checkpoints[self.car.last_cp], self.checkpoints[self.car.last_cp + 1], self.checkpoints[self.car.last_cp + 2]) # pour savoir si le prochain virage est à droite (1) ou gauche (-1)
+        angle_to_center_line = lib.center_angle(self.car.angle - (360 - lib.angle_segment(self.checkpoints[self.car.last_cp], self.checkpoints[self.car.last_cp + 1])) % 360)
+        state = [self.car.x, self.car.y, self.car.speed, self.car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve, angle_to_center_line]
+        return state
+    
+    
+    def get_rewards(self):        
+        self.car.progression = self.car.get_progression(self.checkpoints)
+        self.progression = self.car.progression
         
-        return step_rewards
+        step_reward = 10 * (self.progression - self.progression_old)
+        self.progression_old = self.progression
+        
+        step_reward -= 0.1
+        self.reward += step_reward
+        
+        if not self.car.alive:
+            step_reward = -100
+            self.terminated = True
+            
+        # print(f"{step_reward:.2f}")
+        
+        return step_reward
     
     def close(self):
         pg.quit()
@@ -278,3 +273,54 @@ class Session:
 
 
 
+if __name__ == '__main__':
+
+    ses = Session()
+    states = ses.reset()
+
+    while not ses.episode_done:
+        
+        actions = []
+        keys = pg.key.get_pressed()
+        if keys[pg.K_LEFT]:
+            actions.append(0)
+        if keys[pg.K_RIGHT]:
+            actions.append(1)
+        if keys[pg.K_UP]:
+            actions.append(2)
+        if keys[pg.K_DOWN]:
+            actions.append(3)
+            
+        states = ses.step(actions)
+        
+        
+        
+        
+        
+        
+        
+    
+  
+# def get_rewards_gym(self):
+#     self.car.progression = self.car.get_progression(self.checkpoints)
+#     if self.car.last_cp > self.car.current_cp:
+#         self.reward += 1000 / len(self.checkpoints)
+#         self.car.current_cp = self.car.last_cp
+#     self.reward -= 0.1
+#     step_reward = self.reward - self.prev_reward
+#     self.prev_reward = self.reward
+#     if not self.car.alive:
+#         step_reward = -100
+#         self.terminated = True
+#     return step_reward
+
+
+# def get_rewards_old(self):
+#     self.car.progression = self.car.get_progression(self.checkpoints)
+#     self.reward = 10 * self.car.progression
+#     step_reward = self.reward - self.prev_reward - 0.1
+#     self.prev_reward = self.reward
+#     if not self.car.alive:
+#         step_reward = -100
+#         self.terminated = True
+#     return step_reward

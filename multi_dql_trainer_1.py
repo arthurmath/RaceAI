@@ -5,7 +5,7 @@ from collections import deque
 import torch
 from torch import nn
 import torch.nn.functional as F
-from dql_game_multi_1 import Session
+from multi_dql_game_1 import Session
 import library as lib
 
 import tensorflow as tf

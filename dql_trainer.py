@@ -1,4 +1,3 @@
-import numpy as np
 import random as rd
 import matplotlib.pyplot as plt
 from collections import deque
@@ -55,7 +54,7 @@ class ReplayMemory():
 
 class DQL(): 
     def __init__(self, render):
-        self.env = Session(nb_cars=1, display=render)
+        self.env = Session(display=render)
         self.num_states = len(self.env.observation_space) # 4: x, y, speed, angle
         self.num_actions = len(self.env.action_space) # 4: up, down, left, right
 
@@ -67,15 +66,13 @@ class DQL():
         # Create policy and target network. Number of nodes in the hidden layer can be adjusted.
         policy_dqn = DQN(self.num_states, self.num_actions)
         target_dqn = DQN(self.num_states, self.num_actions)
-        target_dqn.load_state_dict(policy_dqn.state_dict()) # Copy weights/biases from policy to the target
+        target_dqn.load_state_dict(policy_dqn.state_dict()) # Copy weights from policy to target
         
         self.optimizer = torch.optim.Adam(policy_dqn.parameters(), lr=LR)
         self.loss_fn = nn.MSELoss()
 
-        # List to keep track of rewards and epsilon. 
+        # List to keep track of rewards. 
         rewards_per_episode = []
-
-        # Track number of steps taken. Used for syncing policy => target network.
         best_rewards = - float('inf')
             
         for episode in range(1, NUM_EPISODES):
@@ -119,6 +116,7 @@ class DQL():
             if episode % PLOT_RATE == 0:
                 self.plot_progress(rewards_per_episode)
             
+            # Save weights if best score
             if rewards > best_rewards:
                 best_rewards = rewards
                 torch.save(policy_dqn.state_dict(), filepath)
@@ -216,9 +214,9 @@ class DQL():
 if __name__ == '__main__':
     filepath = "weights.pt"
 
-    mountaincar = DQL(render=True)
-    mountaincar.train(filepath)
-    #mountaincar.test(filepath)
+    algo = DQL(render=True)
+    algo.train(filepath)
+    #algo.test(filepath)
     
     
     
