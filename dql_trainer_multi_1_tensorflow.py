@@ -14,13 +14,15 @@ import library as lib           # ta lib inchangée
 LR              = 0.001
 GAMMA           = 0.95
 SYNC_RATE       = 500
-BATCH_SIZE      = 256
-EPS_DECAY       = 4
-EPS_MIN         = 0.1
-NUM_EPISODES    = 1500
+BATCH_SIZE      = 32
+EPS_DECAY       = 1
+EPS_DECAY_RATE = 0.999 #pour allonger temps d'exploration
+EPS_MIN         = 0.2
+NUM_EPISODES    = 600
 MEMORY_LEN      = 400_000 #MEMORY_LEN = POPULATION_SIZE * 200 * steps * 2 #steps : episode conservés
 PLOT_RATE       = 100
-POPULATION_SIZE = 250
+POPULATION_SIZE = 50
+EPS_START = 1
 # --------------------------------------------------------
 
 rd.seed(0)
@@ -163,13 +165,13 @@ class DQL():
             step = 0
             terminated = False
 
-            while not terminated and step < 200:
+            while not terminated and step < 500:
                 actions = []
                 #action_weights = self.action_distribution_strategy(episode)
                 for state in states:
                     if rd.random() < epsilon:
                         #action = rd.choices(self.env.action_space,weights=action_weights)[0]
-                        action = rd.choices(self.env.action_space, weights=[0.3975,0.3,0.3,0.0025])[0]
+                        action = rd.choices(self.env.action_space, weights=[0.4,0.3,0.3,0])[0]
                     else:
                         qvals = self.policy_dqn(self.normalisation(state))
                         action = int(tf.argmax(qvals, axis=1)[0])
@@ -187,18 +189,22 @@ class DQL():
                 rewards   += sum(rewards_list)
                 step      += 1
                 terminated = all(terminated_list) or self.env.episode_done
+            print("step",step)
 
             if self.env.quit: break
 
             rewards_per_episode.append(rewards)
+
 
             # apprentissage
             if len(memory) > BATCH_SIZE:
                 s,a,ns,r,d = memory.sample()
                 self._train_step(self.normalisation(s),a,self.normalisation(ns),r, d)
 
-                epsilon = max(epsilon - EPS_DECAY/NUM_EPISODES, EPS_MIN)
+                #epsilon = max(epsilon - EPS_DECAY/NUM_EPISODES, EPS_MIN)
 
+                #epsilon = max(EPS_MIN, epsilon * (EPS_DECAY_RATE ** episode))
+                epsilon = max(EPS_MIN, EPS_START * (EPS_DECAY_RATE ** episode))
                 # sync cible
                 if episode % SYNC_RATE == 0:
                     self.target_dqn.set_weights(self.policy_dqn.get_weights())
@@ -211,10 +217,12 @@ class DQL():
             if episode % PLOT_RATE == 0:
                 self.plot_progress(rewards_per_episode)
 
-            print(f'Episode {episode}, epsilon {epsilon:.2f}, reward {rewards:7.2f},'
+            print(f'Episode {episode}, epsilon {epsilon:.2f}, sum_rewards {rewards:7.2f},'
                   f' memory {len(memory)}')
+        self.rewards_per_episode = rewards_per_episode
 
         self.env.close()
+
 
     # ------------------- Inférence -------------------------
     def test(self, filepath):

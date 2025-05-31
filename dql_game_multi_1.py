@@ -28,6 +28,7 @@ class Car:
         self.compteur = 0 # pour les collisions
         self.last_cp = 0
         self.current_cp = 0
+        self.dist_to_center_line = 0.0
         
         self.car_img = ses.car_img
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
@@ -243,6 +244,7 @@ class Session:
             dist_to_center_line *= lib.position_relative(self.checkpoints[car.last_cp],
                                                          self.checkpoints[(car.last_cp + 1) % len(self.checkpoints)],
                                                          (car.x, car.y))
+            car.dist_to_center_line = abs(dist_to_center_line)
             dist_to_next_cp = lib.distance(self.checkpoints[(car.last_cp + 1) % len(self.checkpoints)], (car.x, car.y))
 
             # Utiliser modulo pour rendre les indices cycliques
@@ -276,14 +278,23 @@ class Session:
     def get_rewards(self):
         step_rewards = []
         for i, car in enumerate(self.car_list):
-            
+
             car.progression = car.get_progression(self.checkpoints)
             if car.last_cp > car.current_cp:
                 self.rewards[i] += 1000 / len(self.checkpoints)
                 car.current_cp = car.last_cp
                 
             self.rewards[i] -= 0.1
-            
+            self.rewards[i] += car.progression * 0.5 #mettre plus de poids sur la progression
+            distance = abs(car.dist_to_center_line)
+            # print("distance", distance)
+            if distance < 10:
+                self.rewards[i] += 0.3
+            elif distance < 25:
+                self.rewards[i] += 0.1
+            elif distance > 50:
+                self.rewards[i] -= 0.2
+
             step_reward = self.rewards[i] - self.prev_rewards[i]
             self.prev_rewards[i] = self.rewards[i]
             
