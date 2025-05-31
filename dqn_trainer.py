@@ -13,7 +13,7 @@ from collections import deque
 
 LR = 1e-2
 N_STEPS = 200
-POPULATION = 1 
+POPULATION = 3
 BATCH_SIZE = 16 # 32
 N_EPISODES = 100 
 EPS_FACTOR = int(N_EPISODES * 5 / 6) 

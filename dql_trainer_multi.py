@@ -5,10 +5,9 @@ from collections import deque
 import torch
 from torch import nn
 import torch.nn.functional as F
-from dql_game import Session
+from dql_game_multi import Session
 import library as lib
-
-
+#from tests.test_generation import POPULATION
 
 LR = 0.01                    # learning rate
 GAMMA = 0.95                 # discount rate
@@ -19,6 +18,7 @@ EPS_MIN = 0.1                # minimum value of epsilon
 NUM_EPISODES = 10_000        # number of episodes
 MEMORY_LEN = 10_000          # size of the buffer
 PLOT_RATE = 100              # when to plot rewards
+POPULATION =2
 
 rd.seed(0)
 
@@ -33,6 +33,8 @@ class DQN(nn.Module):
         self.out = nn.Linear(20, outputs)  # ouptut layer
 
     def forward(self, x):
+        if x.dim() == 1:
+            x = x.unsqueeze(0) #converti 2D en 1D
         x = F.relu(self.fc1(x))     # Apply rectified linear unit (ReLU) activation
         x = F.relu(self.fc2(x))
         x = F.relu(self.out(x))
@@ -55,7 +57,7 @@ class ReplayMemory():
 
 class DQL(): 
     def __init__(self, render):
-        self.env = Session(nb_cars=1, display=render)
+        self.env = Session(nb_cars=POPULATION, display=render)
         self.num_states = len(self.env.observation_space) # 4: x, y, speed, angle
         self.num_actions = len(self.env.action_space) # 4: up, down, left, right
 
@@ -89,22 +91,35 @@ class DQL():
 
                 # Select action based on epsilon-greedy
                 if rd.random() < epsilon:
-                    action = rd.choices(self.env.action_space, weights=[0.5, 0.2, 0.2, 0.1])#[0] # on favorise l'action up
+                    action = [
+                    rd.choices(self.env.action_space, weights=[0.5, 0.2, 0.2, 0.1])[0] if car.alive else None for car in self.env.car_list
+                    ] # on favorise l'action up
                     #print('random', action)
                 else:
                     with torch.no_grad():
-                        action = policy_dqn(self.normalisation(state)).argmax().item()
+                        action = [
+                            policy_dqn(self.normalisation(state[i])).argmax().item() if car.alive else None
+                            for i, car in enumerate(self.env.car_list)
+                        ]
+
+                if len(action) != len(self.env.car_list):
+                    raise ValueError(
+                        f"Error: actions ({len(action)}) and car_list ({len(self.env.car_list)}) lengths do not match.")
+
                         # print('nn',action)
+                #if not isinstance(action, (list, tuple)):
+                #   action = [action] * len(self.env.action_space)
+
 
                 # Execute action
                 new_state, reward, terminated = self.env.step(action)
 
                 # Save experience into memory
                 memory.append((state, action, new_state, reward, terminated))
-                print((state, action, new_state, reward, terminated))
+                #print((state, action, new_state, reward, terminated))
 
                 state = new_state
-                rewards += reward
+                rewards += sum(reward)
                 step += 1
                 
                 if self.env.episode_done:
@@ -147,9 +162,10 @@ class DQL():
 
         for state, action, new_state, reward, terminated in mini_batch:
 
+
             if terminated: 
                 # When in a terminated state, target q value should be set to the reward.
-                target = torch.FloatTensor([reward])
+                target = torch.FloatTensor([reward]*len(action))
             else:
                 with torch.no_grad():
                     target = torch.FloatTensor(
@@ -163,9 +179,15 @@ class DQL():
             # Get the target set of Q values
             target_q = target_dqn(self.normalisation(state)).detach()
             # Adjust the specific action to the target that was just calculated
-            target_q[action] = target
+            for i in range(len(action)):
+                if action[i] is not None: #on ignore si la voiture est morte
+                    if target.dim() > 0:
+                        target_q[i, action[i]] = target[i].squeeze() #réduit les dimensions
+                    else:
+                        target_q[i, action[i]] = target
+            #target_q[action] = target
             target_q_list.append(target_q)
-                
+
         # Compute loss for the whole minibatch
         loss = self.loss_fn(torch.stack(current_q_list), torch.stack(target_q_list))
 
@@ -175,13 +197,38 @@ class DQL():
         loss.backward()
         self.optimizer.step()
 
-    
     def normalisation(self, state):
         """ Scales nn inputs to [-1, 1] for better convergence """
-        state = [lib.scale(state[i], *self.env.observation_space[i]) for i in range(len(state))]
-        return torch.FloatTensor(state)
-    
-            
+        # Vérifier si `state` est un entier ou une valeur incorrecte
+        if isinstance(state, (int, float)):
+            # Si state est un entier/flottant, supposons qu'il représente une seule valeur d'état
+            state = [state]  # Convertir en liste
+
+        # Vérifier que `state` est une liste ou un tuple
+        if not isinstance(state, (list, tuple)):
+            raise TypeError(f"`state` doit être une liste ou un tuple, mais un {type(state)} a été fourni : {state}")
+
+        # Vérifier que observation_space est bien formaté
+        if not isinstance(self.env.observation_space, (list, tuple)):
+            raise TypeError(
+                f"`self.env.observation_space` doit être une liste ou un tuple, mais un {type(self.env.observation_space)} a été fourni."
+            )
+
+        # Normaliser chaque composante de l'état
+        normalized_state = []
+        for i in range(len(state)):
+            # Vérifier que observation_space[i] est un tuple attendu
+            if not isinstance(self.env.observation_space[i], (list, tuple)) or len(self.env.observation_space[i]) != 2:
+                raise ValueError(
+                    f"self.env.observation_space[{i}] doit être un tuple (min, max), mais a été {self.env.observation_space[i]}"
+                )
+
+            # Appliquer la fonction de mise à l'échelle
+            normalized_value = lib.scale(state[i], *self.env.observation_space[i])
+            normalized_state.append(normalized_value)
+
+        return torch.FloatTensor(normalized_state)
+
     def plot_progress(self, rewards):
         plt.figure()
         plt.plot(rewards, label='Rewards')
@@ -216,9 +263,9 @@ class DQL():
 if __name__ == '__main__':
     filepath = "weights.pt"
 
-    #mountaincar = DQL(render=True)
+    mountaincar = DQL(render=True)
     mountaincar.train(filepath)
-    mountaincar.test(filepath)
+    #mountaincar.test(filepath)
     
     
     
