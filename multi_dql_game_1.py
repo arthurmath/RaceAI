@@ -45,14 +45,14 @@ class Car:
         moved = False               
         
         # Apply action to car's physics
-        if actions == 1: # left
+        if 1 in actions: # left
             self.angle = (self.angle + self.rotation_speed) % 360
-        if actions == 2: # right
+        if 2 in actions: # right
             self.angle = (self.angle - self.rotation_speed) % 360
-        if actions == 0: # up
+        if 0 in actions: # up
             self.speed = min(self.speed + self.acceleration, self.max_speed)
             moved = True
-        if actions == 3: # down
+        if 3 in actions: # down
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
             moved = True
 
@@ -220,7 +220,7 @@ class Session:
         # Apply action to each cars
         #actions = [[actions]]
         for idx, car in enumerate(self.car_list):
-            if len(actions) != 0 and car.alive:
+            if car.alive:
                 car.update(actions[idx]) #IL FALLAIT ENCAPSULER LA PUTAIN D4ACTION DANS UNE LISTE
         
         # Check if all cars are dead
@@ -241,24 +241,17 @@ class Session:
         states = []
         for car in self.car_list:
             dist_to_center_line = lib.distance(car.closest_projection, (car.x, car.y))
-            dist_to_center_line *= lib.position_relative(self.checkpoints[car.last_cp],
-                                                         self.checkpoints[(car.last_cp + 1) % len(self.checkpoints)],
-                                                         (car.x, car.y))
+            dist_to_center_line *= lib.position_relative(self.checkpoints[car.last_cp],self.checkpoints[(car.last_cp + 1) % len(self.checkpoints)], (car.x, car.y))
             car.dist_to_center_line = abs(dist_to_center_line)
             dist_to_next_cp = lib.distance(self.checkpoints[(car.last_cp + 1) % len(self.checkpoints)], (car.x, car.y))
 
             # Utiliser modulo pour rendre les indices cycliques
             next_cp = (car.last_cp + 1) % len(self.checkpoints)
             next_next_cp = (car.last_cp + 2) % len(self.checkpoints)
+            direction_next_curve = lib.position_relative(self.checkpoints[car.last_cp], self.checkpoints[next_cp], self.checkpoints[next_next_cp])
+            angle_to_center_line = lib.center_angle(car.angle - (360 - lib.angle_segment(self.checkpoints[car.last_cp], self.checkpoints[next_cp])) % 360)
 
-            direction_next_curve = lib.position_relative(self.checkpoints[car.last_cp], self.checkpoints[next_cp],
-                                                         self.checkpoints[next_next_cp])
-            angle_to_center_line = lib.center_angle(
-                car.angle - (360 - lib.angle_segment(self.checkpoints[car.last_cp], self.checkpoints[next_cp])) % 360)
-
-            states.append(
-                [car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve,
-                 angle_to_center_line])
+            states.append([car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve,angle_to_center_line])
         return states
 
 
@@ -285,15 +278,11 @@ class Session:
                 car.current_cp = car.last_cp
                 
             self.rewards[i] -= 0.1
-            self.rewards[i] += car.progression * 0.5 #mettre plus de poids sur la progression
+            self.rewards[i] += car.progression * 0.5 # mettre plus de poids sur la progression
             distance = abs(car.dist_to_center_line)
-            # print("distance", distance)
+            print(f"distance : {distance:.2f}")
             if distance < 10:
                 self.rewards[i] += 0.3
-            elif distance < 25:
-                self.rewards[i] += 0.1
-            elif distance > 50:
-                self.rewards[i] -= 0.2
 
             step_reward = self.rewards[i] - self.prev_rewards[i]
             self.prev_rewards[i] = self.rewards[i]
@@ -312,3 +301,26 @@ class Session:
 
 
 
+if __name__ == '__main__':
+
+    ses = Session(nb_cars=1)
+    states = ses.reset()
+
+    while not ses.episode_done:
+        
+        actions = []
+        keys = pg.key.get_pressed()
+        if keys[pg.K_LEFT]:
+            actions.append(0)
+        if keys[pg.K_RIGHT]:
+            actions.append(1)
+        if keys[pg.K_UP]:
+            actions.append(2)
+        if keys[pg.K_DOWN]:
+            actions.append(3)
+            
+        states = ses.step(actions)
+
+
+# TODO
+# Tester la valeur distance < 10 ligne 284
