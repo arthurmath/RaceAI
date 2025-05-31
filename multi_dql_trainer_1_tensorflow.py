@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from dql_game_multi_1 import Session
+from multi_dql_game_1 import Session
 import library as lib           # ta lib inchangée
 
 # ------------ hyper‑paramètres (inchangés) -------------
