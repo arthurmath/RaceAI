@@ -467,7 +467,7 @@ tf.random.set_seed(0)
 
 
 if __name__ == '__main__':
-   filepath = "weights.pt"
+   filepath = "results_dql/weights.pt"
 
    mountaincar = DQL(render=True)
    mountaincar.train(filepath)

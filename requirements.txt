@@ -1,9 +1,13 @@
 pygame
 pathlib
-numpy
+numpy<2
 matplotlib
 tensorflow
+keras
 jax
 pygad
-pandas
 torch
+tensorflow-directml-plugin
+uv
+protobuf
+tensorflow-cpu

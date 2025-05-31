@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras import layers
 
 from multi_dql_game_1 import Session
@@ -16,12 +15,12 @@ GAMMA           = 0.95
 SYNC_RATE       = 500
 BATCH_SIZE      = 32
 EPS_DECAY       = 1
-EPS_DECAY_RATE = 0.999 #pour allonger temps d'exploration
+EPS_DECAY_RATE  = 0.999 #pour allonger temps d'exploration
 EPS_MIN         = 0.2
-NUM_EPISODES    = 600
+NUM_EPISODES    = 1400
 MEMORY_LEN      = 400_000 #MEMORY_LEN = POPULATION_SIZE * 200 * steps * 2 #steps : episode conservés
 PLOT_RATE       = 100
-POPULATION_SIZE = 50
+POPULATION_SIZE = 500
 EPS_START = 1
 # --------------------------------------------------------
 
@@ -30,7 +29,7 @@ tf.random.set_seed(0)
 
 
 # ================= Réseau DQN (Keras) ===================
-class DQN(keras.Model):
+class DQN(tf.keras.Model):
     def __init__(self, inputs, outputs):
         super().__init__()
         self.fc1 = layers.Dense(32, activation="relu")
@@ -78,11 +77,10 @@ class DQL():
         self.target_dqn = DQN(self.num_states, self.num_actions)
         self.target_dqn.set_weights(self.policy_dqn.get_weights())
 
-        self.optimizer = keras.optimizers.Adam(learning_rate=LR)
-        self.loss_fn   = keras.losses.MeanSquaredError()
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=LR)
+        self.loss_fn   = tf.keras.losses.MeanSquaredError()
 
-    # ------------ normalisation inchangée (version TF) ----
-    # ------------ normalisation (version finale) ----------
+    # ------------ normalisation (version TF) ---------------
     def normalisation(self, state):
         """
         • state = 1‑D  (num_states,)  -> Tensor (1, num_states)
@@ -109,13 +107,13 @@ class DQL():
     # ------------ tracé  ----------------------------------
     def plot_progress(self, rewards):
         plt.figure()
-        #plt.clf() #cett
         plt.plot(rewards, label="Rewards")
         plt.plot(lib.moving_average(rewards), color='black', label='Window avg')
         plt.title("Rewards sum per episode")
         plt.xlabel("Episode")
         plt.ylabel("Reward")
         plt.savefig(f'rewards_episode_{len(rewards)}_num_ep{NUM_EPISODES}_pop_size{POPULATION_SIZE}.png')
+
     # ------------------ optimisation -----------------------
     @tf.function
     def _train_step(self, states, actions, new_states, rewards, dones):
@@ -130,7 +128,7 @@ class DQL():
 
         with tf.GradientTape() as tape:
             q_vals = self.policy_dqn(states)                   # [B, num_actions]
-            idx    = tf.stack([tf.range(BATCH_SIZE), actions], axis=1)
+            # idx    = tf.stack([tf.range(BATCH_SIZE), actions], axis=1)
             batch_sz = tf.shape(actions)[0]  # dynamique
             idx = tf.stack([tf.range(batch_sz), actions], axis=1)
             pred_q = tf.gather_nd(q_vals, idx)                 # [B]
@@ -189,7 +187,6 @@ class DQL():
                 rewards   += sum(rewards_list)
                 step      += 1
                 terminated = all(terminated_list) or self.env.episode_done
-            print("step",step)
 
             if self.env.quit: break
 
@@ -239,6 +236,13 @@ class DQL():
 
 # ========================= main ============================
 if __name__ == '__main__':
-    agent = DQL(render=True)
-    agent.train("weights_1_tf")
-    #agent.test("weights_1_tf")
+    agent = DQL(render=False)
+    agent.train("weights_2_tf")
+    agent.test("weights_2_tf")
+
+
+
+
+
+# TODO
+# print distance moyenne et max parcourue a chaque itération
