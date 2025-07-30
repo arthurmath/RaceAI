@@ -28,7 +28,11 @@ class Car:
         self.compteur = 0 # pour les collisions
         self.last_cp = 0
         self.current_cp = 0
+        self.max_cp_reached = 0 # pour savoir si on a passé un checkpoint
+        self.passed_cp = set() # on met set() plutot qu'une liste pour éviter les doublons
         self.dist_to_center_line = 0.0
+        self.progression = 0.0 #pourcentage de progression sur la piste, pour les rewards
+        self.last_progression = 0.0
         
         self.car_img = ses.car_img
         self.car_rotated = pg.transform.rotate(self.car_img, self.angle)
@@ -45,14 +49,14 @@ class Car:
         moved = False               
         
         # Apply action to car's physics
-        if 1 in actions: # left
+        if 1 == actions: # left
             self.angle = (self.angle + self.rotation_speed) % 360
-        if 2 in actions: # right
+        if 2 == actions: # right
             self.angle = (self.angle - self.rotation_speed) % 360
-        if 0 in actions: # up
+        if 0 == actions: # up
             self.speed = min(self.speed + self.acceleration, self.max_speed)
             moved = True
-        if 3 in actions: # down
+        if 3 == actions: # down
             self.speed = max(self.speed - self.acceleration, -self.max_speed / 2)
             moved = True
 
@@ -118,16 +122,18 @@ class Session:
         self.episode_done = False
         self.quit = False
         
-        self.observation_space = [[0, 1200], [0, 900], [-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
+        # self.observation_space = [[0, 1200], [0, 900], [-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
+        self.observation_space = [[-5, 10], [0, 360], [-60, 30], [0, 400], [-1, 1], [-180, 180]]
         self.action_space = [0, 1, 2, 3]
         
-        self.checkpoints = [(240, 274), (240, 213), (239, 131), (300, 76), (364, 131), (365, 194), (365, 297), (366, 392), 
-                            (421, 459), (482, 398), (481, 316), (481, 226), (480, 128), (532, 78), (627, 78), (721, 78), 
-                            (824, 79), (942, 80), (991, 128), (991, 239), (941, 282), (859, 281), (766, 280), (678, 280), 
-                            (613, 341), (681, 406), (764, 404), (859, 402), (940, 403), (986, 443), (988, 510), (987, 587), 
-                            (987, 672), (988, 753), (948, 810), (878, 803), (833, 752), (836, 675), (833, 589), (780, 535), 
-                            (680, 534), (626, 587), (626, 681), (620, 763), (571, 811), (494, 785), (444, 736), (390, 683), 
-                            (316, 610), (262, 553), (239, 487), (239, 422), (239, 353),(240, 274)]
+        self.checkpoints = [(240, 274), (240, 213), (239, 131), (300, 76), (364, 131), (365, 194), (365, 297), (366, 392),
+                            (421, 459), (482, 398), (481, 316), (481, 226), (480, 128), (532, 78), (627, 78), (721, 78),
+                            (824, 79), (942, 80), (991, 128), (991, 239), (941, 282), (859, 281), (766, 280), (678, 280),
+                            (613, 341), (681, 406), (764, 404), (859, 402), (940, 403), (986, 443), (988, 510), (987, 587),
+                            (987, 672), (988, 753), (948, 810), (878, 803), (833, 752), (836, 675), (833, 589), (780, 535),
+                            (680, 534), (626, 587), (626, 681), (620, 763), (571, 811), (494, 785), (444, 736), (390, 683),
+                            (316, 610), (262, 553), (239, 487), (239, 422), (239, 353)]
+        # self.checkpoints = [(230,275), (240,213), (239, 131), (300, 76), (364, 131),(365,194), (365, 297)]#,(480,128), (532, 78), (721, 78), (824, 79), (991, 128), (941, 282), (859, 281)]
         self.total_distance = sum([math.dist(self.checkpoints[i], self.checkpoints[i + 1]) for i in range(len(self.checkpoints)-1)])
         
         pg.init()
@@ -168,6 +174,14 @@ class Session:
         self.prev_rewards = [0] * self.nb_cars
         self.terminateds = [False] * self.nb_cars
         self.car_list = [Car(self) for _ in range(self.nb_cars)] #on crée N voitures
+        for car in self.car_list: #on initialise la progression de checkpoints
+            init_prog = car.get_progression(self.checkpoints)
+            car.passed_cp = set() # on initialise le set de checkpoints passés
+            car.progression = init_prog
+            car.last_progression = init_prog
+            car.max_cp_reached = 0
+            car.current_cp = car.last_cp = 0
+
         return self.get_states()#[0] #on retourne l'ensemble des états sous une forme de liste imbriquée, et non pas seulement l'état de la première voiture
         
     def draw(self):
@@ -250,8 +264,8 @@ class Session:
             next_next_cp = (car.last_cp + 2) % len(self.checkpoints)
             direction_next_curve = lib.position_relative(self.checkpoints[car.last_cp], self.checkpoints[next_cp], self.checkpoints[next_next_cp])
             angle_to_center_line = lib.center_angle(car.angle - (360 - lib.angle_segment(self.checkpoints[car.last_cp], self.checkpoints[next_cp])) % 360)
-
-            states.append([car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve,angle_to_center_line])
+            states.append([car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve,angle_to_center_line])
+            # states.append([car.x, car.y, car.speed, car.angle, dist_to_center_line, dist_to_next_cp, direction_next_curve,angle_to_center_line])
         return states
 
 
@@ -271,24 +285,51 @@ class Session:
     def get_rewards(self):
         step_rewards = []
         for i, car in enumerate(self.car_list):
-
             car.progression = car.get_progression(self.checkpoints)
-            if car.last_cp > car.current_cp:
-                self.rewards[i] += 1000 / len(self.checkpoints)
-                car.current_cp = car.last_cp
+
+            prev_cp = car.current_cp
+            # last_cp = car.get_progression(self.checkpoints)
+
+            # self.rewards[i] += car.progression**2 # mettre plus de poids sur la progression
+            #ajout bonus last progression
+            delta_prog = car.progression - car.last_progression
+            self.rewards[i] += delta_prog * 10 # mettre plus de poids sur la progression
+
+            car.last_progression = car.progression
+            track_angle = lib.angle_segment(self.checkpoints[car.last_cp], self.checkpoints[car.last_cp + 1 % len(self.checkpoints)])
+            delta_angle = lib.center_angle(car.angle - track_angle)
+            orient_bonus = max(0, math.cos(math.radians(delta_angle))) # bonus si la voiture est orientée dans le bon sens
+            # print("car", i , "orient bonus:", orient_bonus)
+            self.rewards[i] += orient_bonus*0.1 # bonus pour être orienté dans le bon sens
+
+            self.rewards[i] -= 0.1 # penalise le fait de ne pas avancer
+            if delta_prog < 0:
+                self.rewards[i] -= 0.05
+            if car.progression == 100: # si la voiture a fini la course
+                self.rewards[i] += 100
+            # print(f"car {i} : last cp = {car.last_cp}, current cp = {car.current_cp}, progression = {car.progression:.2f}%")
+            if car.last_cp not in car.passed_cp: # si on a passé un checkpoint
+                # print("Checkpoint passed!")
+                self.rewards[i] += 25 # bonus pour avoir passé un checkpoint
+                car.passed_cp.add(car.last_cp)
+                # car.current_cp = car.last_cp
                 
-            self.rewards[i] -= 0.1
-            self.rewards[i] += car.progression * 0.5 # mettre plus de poids sur la progression
-            distance = abs(car.dist_to_center_line)
-            print(f"distance : {distance:.2f}")
-            if distance < 10:
-                self.rewards[i] += 0.3
+            # self.rewards[i] -= 0.1
+            distance_center = abs(car.dist_to_center_line)
+            # print(f"car {i} : dist to center line = {distance_center:.2f}, progression = {car.progression:.2f}%")
+            # #print(f"distance : {distance:.2f}")
+            if distance_center < 10:
+                self.rewards[i] += 0.1 * (10-distance_center) # bonus pour être proche de la center line
+            # elif 10< distance_center < 20:
+            #      self.rewards[i] -= 0.02
+            # elif 20< distance < 30:
+            #     self.rewards[i] += 0.4
 
             step_reward = self.rewards[i] - self.prev_rewards[i]
             self.prev_rewards[i] = self.rewards[i]
             
             if not car.alive:
-                step_reward = -100
+                step_reward = -30
                 self.terminateds[i] = True
             step_rewards.append(step_reward)
         
@@ -307,19 +348,39 @@ if __name__ == '__main__':
     states = ses.reset()
 
     while not ses.episode_done:
-        
         actions = []
         keys = pg.key.get_pressed()
+
+        # Créer une action par défaut pour chaque voiture
+        actions = [0] * ses.nb_cars  # 0 comme action par défaut (avancer)
+
+        # Si des touches sont pressées, appliquer l'action à toutes les voitures
         if keys[pg.K_LEFT]:
-            actions.append(0)
-        if keys[pg.K_RIGHT]:
-            actions.append(1)
-        if keys[pg.K_UP]:
-            actions.append(2)
-        if keys[pg.K_DOWN]:
-            actions.append(3)
-            
+            actions = [1] * ses.nb_cars  # tourner à gauche
+        elif keys[pg.K_RIGHT]:
+            actions = [2] * ses.nb_cars  # tourner à droite
+        elif keys[pg.K_UP]:
+            actions = [0] * ses.nb_cars  # avancer
+        elif keys[pg.K_DOWN]:
+            actions = [3] * ses.nb_cars  # reculer
+
         states = ses.step(actions)
+    #
+    #
+    # while not ses.episode_done:
+    #
+    #     actions = []
+    #     keys = pg.key.get_pressed()
+    #     if keys[pg.K_LEFT]:
+    #         actions.append(0)
+    #     if keys[pg.K_RIGHT]:
+    #         actions.append(1)
+    #     if keys[pg.K_UP]:
+    #         actions.append(2)
+    #     if keys[pg.K_DOWN]:
+    #         actions.append(3)
+    #
+    #     states = ses.step(actions)
 
 
 # TODO

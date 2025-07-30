@@ -142,7 +142,7 @@ def window_average(y, win=100):
     return [sum(y[i : i+win]) / win for i in range(len(y) - win)]
 
 def moving_average(rewards):
-    len_window = 100
+    len_window = 10
     moyenne_mobile = []
     for i in range(len(rewards)):
         if i < len_window:
@@ -152,3 +152,6 @@ def moving_average(rewards):
         window = rewards[start_index: i + 1]
         moyenne_mobile.append(sum(window) / len(window))
     return moyenne_mobile
+def is_focus_transition(car):
+    """ pour le double batch des meilleurs perfs """
+    return car.progression > 40.0
