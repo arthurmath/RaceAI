@@ -2,14 +2,10 @@ import numpy as np
 import random as rd
 import matplotlib.pyplot as plt
 from collections import deque
-
 import tensorflow as tf
-from tensorflow.python.training.training_util import global_step
-
-# from tensorflow.keras import layers
-
 from multi_dql_game_1 import Session
-import library as lib           # ta lib inchangée
+import library as lib 
+
 
 # ------------ hyper‑paramètres (inchangés) -------------
 LR              = 0.001
@@ -26,7 +22,6 @@ POPULATION_SIZE = 50
 EPS_START = 1
 SEQUENCE_LEN = 5 # nombre de transitions à stocker dans la mémoire tampon
 STEP_MAX = 10_000 # nombre maximum d'étapes par épisode
-# --------------------------------------------------------
 
 rd.seed(0)
 tf.random.set_seed(0)
@@ -47,7 +42,6 @@ class DQN(tf.keras.Model):
     #     return self.out(x)
     def __init__(self, sequence_len, num_features, outputs):
         super().__init__()
-        #================ Réseau DQN avec convolutions  ===============
         self.conv1 = tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation="relu")
         self.norm1 = tf.keras.layers.BatchNormalization()
         self.conv2 = tf.keras.layers.Conv1D(filters=128, kernel_size=3, activation="relu")
@@ -64,7 +58,8 @@ class DQN(tf.keras.Model):
         x = self.dense(x)
         return self.out(x)  # retourne les valeurs Q pour chaque action (batch_size, num_actions)
 
-# ================ Mémoire tampon identique =============== mémoire tampon pour stocker dernière transition
+
+# ================ Mémoire tampon identique =============== 
 class DualReplayMemory:
     """buffer_all : pour stocker toutes les transitions
     buffer_focus : pour stocker les transitions les plus performantes"""
@@ -76,6 +71,7 @@ class DualReplayMemory:
         self.buffer_all.append(transition)
         if is_focus: #si transition est une transition focus, on l'ajoute à la mémoire focus
             self.buffer_focus.append(transition)
+            
     def sample(self, BATCH_SIZE, k_fraction=0.2):
         k_focus = int(BATCH_SIZE * k_fraction)  # 20% des échantillons de la mémoire focus
         k_all = BATCH_SIZE - k_focus  # 80% des échantillons de la mémoire générale
@@ -93,44 +89,9 @@ class DualReplayMemory:
             np.array(dones, dtype=np.float32),
         )
 
-
     def __len__(self):
         return len(self.buffer_all)
 
-# ================ Mémoire tampon pour stocker dernières n transitions ===============
-class ReplayMemory:
-    def __init__(self):
-        self.buffer = deque(maxlen=MEMORY_LEN)
-
-    def append(self, transition):
-        # transition = (state_before, action, state_after, reward, done)
-        #transition = (seq_before, action, seq_after, reward, done)
-        self.buffer.append(transition)
-
-    # def sample(self):
-    #     batch = rd.sample(self.buffer, BATCH_SIZE)
-    #     states, actions, new_states, rewards, dones = map(list, zip(*batch))
-    #     return (
-    #         np.array(states, dtype=np.float32),
-    #         np.array(actions, dtype=np.int32),
-    #         np.array(new_states, dtype=np.float32),
-    #         np.array(rewards, dtype=np.float32),
-    #         np.array(dones, dtype=np.float32),
-    #     )
-    # ======= Pour échantillonner des séquences d'états ================
-    def sample(self):
-        batch = rd.sample(self.buffer, BATCH_SIZE)
-        seq_states, actions, seq_new_states, rewards, dones = map(list, zip(*batch))
-        return (
-            np.array(seq_states, dtype=np.float32),  # (BATCH, SEQUENCE_LEN, num_features)
-            np.array(actions, dtype=np.int32),  # (BATCH,)
-            np.array(seq_new_states, dtype=np.float32),  # (BATCH, SEQUENCE_LEN, num_features)
-            np.array(rewards, dtype=np.float32),  # (BATCH,)
-            np.array(dones, dtype=np.float32),  # (BATCH,)
-        )
-
-    def __len__(self):
-        return len(self.buffer)
 
 
 
@@ -176,7 +137,8 @@ class DQL():
             tensor = tf.expand_dims(tensor, axis=0)    # -> (1, num_states)
 
         return tensor
-#======= Normalisation pour les séquences d'états ================
+
+    # ------------ Normalisation pour les séquences d'états --------------
     def normalisation_seq(self, seq_states):
         """
         • seq_states = 3‑D  (batch, SEQUENCE_LEN, num_states) -> Tensor (batch, SEQUENCE_LEN, num_states)
@@ -233,27 +195,17 @@ class DQL():
             zip(grads, self.policy_dqn.trainable_weights)
         )
 
-    # def action_distribution_strategy(self, episode):
-    #     """Retourne la distribution de probabilité pour les actions selon l’épisode."""
-    #     if episode < 500:
-    #         return [0.6, 0.2, 0.2, 0.0]  # favorise fortement 'up'
-    #     elif episode < 2000:
-    #         return [0.4, 0.3, 0.3, 0.0]  # exploration latérale
-    #     elif episode < 5000:
-    #         return [0.3, 0.3, 0.3, 0.1]  # standard équilibré
-    #     else:
-    #         return [0.25, 0.25, 0.25, 0.25]  # exploration uniforme (fin d’apprentissage)
 
     # -------------------- Entraînement ---------------------
     def train(self, filepath: str) -> None:
         epsilon = 1.0
         global_step = 0  # compteur global pour suivre le nombre d'étapes
-        # memory  = ReplayMemory()
         memory = DualReplayMemory()  # mémoire tampon pour stocker les transitions
         rewards_per_episode = []
         distance_per_episode = [] #pour plot
         best_rewards = -float('inf')
         best_episode = 0  # Track which episode had the best performance
+        best_distance = -float('inf')  # Track the best distance achieved
 
         for episode in range(1, NUM_EPISODES+1):
             states = self.env.reset(episode)
@@ -266,57 +218,33 @@ class DQL():
             rewards = 0
             step = 0
             terminated = False
-            #calcul une action a la fois, un peu lent
-            # while not terminated and step < 2000:
-            #     actions = []
-            #     #action_weights = self.action_distribution_strategy(episode)
-            #     for state in states:
-            #         if rd.random() < epsilon:
-            #             #action = rd.choices(self.env.action_space,weights=action_weights)[0]
-            #             action = rd.choices(self.env.action_space, weights=[0.4,0.3,0.3,0])[0]
-            #         else:
-            #             qvals = self.policy_dqn(self.normalisation(state))
-            #             action = int(tf.argmax(qvals, axis=1)[0])
-            #         actions.append(action)
             max_progression_per_episode = 0 # pour stocker la distance maximale parcourue par une voiture dans l'épisode
 
             while not terminated and step < STEP_MAX: #parallèlisation des actions pour plus d'efficacité
                 global_step += 1
                 step += 1
-                # actions = []
                 if rd.random() < epsilon:
                     actions = rd.choices(self.env.action_space, weights=[0.7, 0.15, 0.15, 0], k = POPULATION_SIZE)
                 else:
-                    # states_tensor = self.normalisation(np.array(states))
-                    #on construit un batch de séquences d'états pour chaque voiture
-                    seq_batch = np.stack(state_history, axis=0) #shape (POPULATION_SIZE, SEQUENCE_LEN, num_states)
-                    # print("seq_batch shape", seq_batch.shape) # (POPULATION_SIZE, SEQUENCE_LEN, num_states) (30,5,8)
+                    # on construit un batch de séquences d'états pour chaque voiture
+                    seq_batch = np.stack(state_history, axis=0) #shape (POPULATION_SIZE, SEQUENCE_LEN, num_states) (30,5,8)
                     seq_tensor = self.normalisation_seq(seq_batch)
                     q_vals = self.policy_dqn(seq_tensor)  # on prédit les valeurs Q pour chaque séquence d'états
                     actions = tf.argmax(q_vals, axis=1).numpy()  # on choisit l'action avec la valeur Q maximale pour chaque voiture
-
-                    # qvals = self.policy_dqn(states_tensor)
-                    # actions = tf.argmax(qvals, axis=1).numpy()
-                    # action = tf.argmax(qvals, axis=1)
-                    # actions.append(action)
 
                 new_states, rewards_list, terminated_list = self.env.step(actions)
                 states = new_states  # on met à jour les états pour le prochain épisode
                 current_progressions = [car.progression for car in self.env.car_list if car.alive]
                 # print("current_progressions", current_progressions)
-                if current_progressions:
-                    max_dist_per_episode = max(max_progression_per_episode,max(current_progressions))  # on prend la distance maximale parcourue par une voiture dans l'épisode
-                # else:
-                #     max_dist_per_episode = distance_per_episode
-                # print('max_dist_per_ep', max_dist_per_episode)# on stocke la distance maximale parcourue par une voiture dans l'épisode
-                rewards   += sum(rewards_list)
+                max_dist_per_episode = max(max_progression_per_episode, max(current_progressions))  # on prend la distance maximale parcourue par une voiture dans l'épisode
+                rewards += sum(rewards_list)
                 terminated = all(terminated_list) or self.env.episode_done
 
-                # Check if current performance is the best so far and save immediately
-                if rewards > best_rewards:
-                    best_rewards = rewards
+                # Check if current distance performance is the best so far and save immediately
+                if max_dist_per_episode > best_distance:
+                    best_distance = max_dist_per_episode
                     self.policy_dqn.save_weights(filepath)
-                    print(f"New best performance! Rewards: {rewards:.2f} - Weights saved")
+                    print(f"New best distance! Distance: {max_dist_per_episode:.2f}m - Weights saved")
 
                 # current_progressions = [car.progression for car in self.env.car_list if car.alive]
                 # max_progression = max(current_progressions)
@@ -330,19 +258,7 @@ class DQL():
                     #pour le double batch des meilleures performances
                     memory.append((seq_before, actions[i], seq_after, rewards_list[i], float(terminated_list[i])), is_focus)
 
-                    # memory.append((seq_before, actions[i], seq_after, rewards_list[i], float(terminated_list[i])))
-
-            # apprentissage avec un seul replay memory
-            #     if len(memory) > BATCH_SIZE:
-            #         s,a,ns,r,d = memory.sample()
-            #         # self._train_step(self.normalisation(s),a,self.normalisation(ns),r, d) #pour un seul état
-            #         self._train_step(self.normalisation_seq(s),a,self.normalisation_seq(ns),r, d) #pour une séquence d'états
-            #         #epsilon = max(EPS_MIN, epsilon * (EPS_DECAY_RATE ** episode))
-            #         epsilon = max(EPS_MIN, EPS_START * (EPS_DECAY_RATE ** episode))
-            #         # epsilon = max(EPS_MIN, 1-global_step*(1-EPS_MIN)/STEP_MAX)  # epsilon décroît linéairement
-            #         # sync cible
-
-#pour double batch des meilleures performances
+                # pour double batch des meilleures performances
                 if len(memory) > BATCH_SIZE:
                     s,a, ns, r, d = memory.sample(BATCH_SIZE, k_fraction=0.2)  # 20% des échantillons de la mémoire focus
                     self._train_step(self.normalisation_seq(s), a, self.normalisation_seq(ns), r, d)  # on entraîne le réseau policy
@@ -364,22 +280,14 @@ class DQL():
                 checkpoint_path = f"{filepath}_episode_{episode}"
                 self.policy_dqn.save_weights(checkpoint_path)
 
-                    # terminated = all(terminated_list) or self.env.episode_done
-
-                    # if terminated:
-                    #     break
-
-                # save best - REMOVED: Now saving immediately when performance improves
-
             if episode % PLOT_RATE == 0:
                 self.plot_progress(rewards_per_episode)
                 self.plot_distance(distance_per_episode)
 
             print(f'Episode {episode}, epsilon {epsilon:.2f}, sum_rewards {rewards:7.2f},'
-                  f' memory {len(memory)}')
-            # print(f'Progression max: {max_progression:.2f} m')
+                  f' memory {len(memory)}, max_distance: {max_dist_per_episode:.2f}m')
         
-        print(f"Training completed. Best performance was {best_rewards:.2f} at episode {best_episode}")
+        print(f"Training completed. Best distance was {best_distance:.2f}m at episode {best_episode}")
         self.rewards_per_episode = rewards_per_episode
 
         self.env.close()
@@ -411,21 +319,15 @@ class DQL():
             for i in range(POPULATION_SIZE):
                 state_history[i].append(new_state[i]) # on ajoute le nouvel état à l'historique de chaque voiture
 
-
-#============= Ancienne version de test (une action à la fois) ================
-        # while not terminated:
-        #     actions = [int(tf.argmax(
-        #         self.policy_dqn(self.normalisation(s)), axis=1)[0]) for s in state]
-        #     state, _, terminated_list = self.env.step(actions)
-        #     terminated = any(terminated_list)
         self.env.close()
 
 
 # ========================= main ============================
 if __name__ == '__main__':
+    path = "weights/weights_2_tf"
     agent = DQL(render=True)
-    agent.train("weights/weights_2_tf")
-    # agent.test("weights/weights_2_tf")
+    agent.train(path)
+    agent.test(path)
     plt.show()
 
 
@@ -433,3 +335,106 @@ if __name__ == '__main__':
 
 # TODO
 # print distance moyenne et max parcourue a chaque itération
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# UNUSED
+
+
+
+#     terminated = all(terminated_list) or self.env.episode_done
+
+#     if terminated:
+#         break
+
+# save best - REMOVED: Now saving immediately when performance improves
+
+
+#calcul une action a la fois, un peu lent
+# while not terminated and step < 2000:
+#     actions = []
+#     #action_weights = self.action_distribution_strategy(episode)
+#     for state in states:
+#         if rd.random() < epsilon:
+#             #action = rd.choices(self.env.action_space,weights=action_weights)[0]
+#             action = rd.choices(self.env.action_space, weights=[0.4,0.3,0.3,0])[0]
+#         else:
+#             qvals = self.policy_dqn(self.normalisation(state))
+#             action = int(tf.argmax(qvals, axis=1)[0])
+#         actions.append(action)
+
+
+
+# apprentissage avec un seul replay memory
+#     if len(memory) > BATCH_SIZE:
+#         s,a,ns,r,d = memory.sample()
+#         # self._train_step(self.normalisation(s),a,self.normalisation(ns),r, d) #pour un seul état
+#         self._train_step(self.normalisation_seq(s),a,self.normalisation_seq(ns),r, d) #pour une séquence d'états
+#         #epsilon = max(EPS_MIN, epsilon * (EPS_DECAY_RATE ** episode))
+#         epsilon = max(EPS_MIN, EPS_START * (EPS_DECAY_RATE ** episode))
+#         # epsilon = max(EPS_MIN, 1-global_step*(1-EPS_MIN)/STEP_MAX)  # epsilon décroît linéairement
+#         # sync cible
+
+
+
+
+#============= Ancienne version de test (une action à la fois) ================
+# while not terminated:
+#     actions = [int(tf.argmax(
+#         self.policy_dqn(self.normalisation(s)), axis=1)[0]) for s in state]
+#     state, _, terminated_list = self.env.step(actions)
+#     terminated = any(terminated_list)
+
+
+
+
+
+# ================ Mémoire tampon pour stocker dernières n transitions ===============
+class ReplayMemory:
+    def __init__(self):
+        self.buffer = deque(maxlen=MEMORY_LEN)
+
+    def append(self, transition):
+        # transition = (state_before, action, state_after, reward, done)
+        #transition = (seq_before, action, seq_after, reward, done)
+        self.buffer.append(transition)
+
+    def sample(self):
+        batch = rd.sample(self.buffer, BATCH_SIZE)
+        seq_states, actions, seq_new_states, rewards, dones = map(list, zip(*batch))
+        return (
+            np.array(seq_states, dtype=np.float32),  # (BATCH, SEQUENCE_LEN, num_features)
+            np.array(actions, dtype=np.int32),  # (BATCH,)
+            np.array(seq_new_states, dtype=np.float32),  # (BATCH, SEQUENCE_LEN, num_features)
+            np.array(rewards, dtype=np.float32),  # (BATCH,)
+            np.array(dones, dtype=np.float32),  # (BATCH,)
+        )
+
+    def __len__(self):
+        return len(self.buffer)
