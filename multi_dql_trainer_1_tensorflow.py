@@ -93,6 +93,7 @@ class DualReplayMemory:
             np.array(dones, dtype=np.float32),
         )
 
+
     def __len__(self):
         return len(self.buffer_all)
 
@@ -116,7 +117,7 @@ class ReplayMemory:
     #         np.array(rewards, dtype=np.float32),
     #         np.array(dones, dtype=np.float32),
     #     )
-    #======= Pour échantillonner des séquences d'états ================
+    # ======= Pour échantillonner des séquences d'états ================
     def sample(self):
         batch = rd.sample(self.buffer, BATCH_SIZE)
         seq_states, actions, seq_new_states, rewards, dones = map(list, zip(*batch))
@@ -252,6 +253,7 @@ class DQL():
         rewards_per_episode = []
         distance_per_episode = [] #pour plot
         best_rewards = -float('inf')
+        best_episode = 0  # Track which episode had the best performance
 
         for episode in range(1, NUM_EPISODES+1):
             states = self.env.reset(episode)
@@ -310,6 +312,12 @@ class DQL():
                 rewards   += sum(rewards_list)
                 terminated = all(terminated_list) or self.env.episode_done
 
+                # Check if current performance is the best so far and save immediately
+                if rewards > best_rewards:
+                    best_rewards = rewards
+                    self.policy_dqn.save_weights(filepath)
+                    print(f"New best performance! Rewards: {rewards:.2f} - Weights saved")
+
                 # current_progressions = [car.progression for car in self.env.car_list if car.alive]
                 # max_progression = max(current_progressions)
 
@@ -347,15 +355,21 @@ class DQL():
             rewards_per_episode.append(rewards)
             distance_per_episode.append(max_dist_per_episode)  # pour tracer la distance maximale parcourue par une voiture dans l'épisode
 
+            # Track which episode had the best rewards for logging purposes
+            if rewards > best_rewards:
+                best_episode = episode
+
+            # Optional: Save checkpoint every N episodes for backup
+            if episode % 20 == 0:
+                checkpoint_path = f"{filepath}_episode_{episode}"
+                self.policy_dqn.save_weights(checkpoint_path)
+
                     # terminated = all(terminated_list) or self.env.episode_done
 
                     # if terminated:
                     #     break
 
-                # save best
-            if rewards > best_rewards:
-                best_rewards = rewards
-                self.policy_dqn.save_weights(filepath)
+                # save best - REMOVED: Now saving immediately when performance improves
 
             if episode % PLOT_RATE == 0:
                 self.plot_progress(rewards_per_episode)
@@ -364,6 +378,8 @@ class DQL():
             print(f'Episode {episode}, epsilon {epsilon:.2f}, sum_rewards {rewards:7.2f},'
                   f' memory {len(memory)}')
             # print(f'Progression max: {max_progression:.2f} m')
+        
+        print(f"Training completed. Best performance was {best_rewards:.2f} at episode {best_episode}")
         self.rewards_per_episode = rewards_per_episode
 
         self.env.close()
@@ -408,8 +424,8 @@ class DQL():
 # ========================= main ============================
 if __name__ == '__main__':
     agent = DQL(render=True)
-    agent.train("weights_2_tf")
-    # agent.test("weights_2_tf")
+    agent.train("weights/weights_2_tf")
+    # agent.test("weights/weights_2_tf")
     plt.show()
 
 
